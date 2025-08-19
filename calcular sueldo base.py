@@ -29,7 +29,7 @@ def calcular_sueldo_base_desde_liquido(sueldo_liquido_deseado, precision=100, ti
     '''
     # Parámetros - agosto 2025
     ingreso_minimo = 529_000
-    uf = 39_178
+    uf = 39_383
     max_imponible_afp_salud = 87.8   # Tope imponible AFP y salud
     max_imponible_seguro_cesantia = 131.8  # Tope imponible Seguro Cesantía
     
@@ -162,4 +162,4 @@ def calcular_sueldo_base_desde_liquido(sueldo_liquido_deseado, precision=100, ti
     print(f"\n\n")
     return sueldo_base
 
-calcular_sueldo_base_desde_liquido(2_000_000, tipo_salud="isapre")
+calcular_sueldo_base_desde_liquido(1_000_000, tipo_salud="fonasa")
