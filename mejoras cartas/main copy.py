@@ -1,4 +1,3 @@
-
 #importaciones
 from docxtpl import DocxTemplate
 from docx2pdf import convert
@@ -8,22 +7,87 @@ import win32com.client as win32
 from datetime import datetime
 import re
 import unidecode
+import sys
 
-
-# Obtener directorio del script
+# Obtener directorio del script actual
 script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Agregar el directorio actual al path (donde está calcular_liquido.py)
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
+
+# Importar desde el mismo directorio
+try:
+    from calcular_liquido import calcular_liquido_desde_base, impuesto_unico
+    print("✅ Funciones importadas correctamente")
+except ImportError as e:
+    print(f"❌ Error al importar funciones: {e}")
+    print(f"Directorio actual: {script_dir}")
+    print(f"Archivos en directorio actual: {os.listdir(script_dir)}")
+    sys.exit(1)
 
 # Rutas y configuración - USAR RUTAS ABSOLUTAS
 TEMPLATES_DIR = os.path.join(script_dir, "Formatos Cartas")
 TEMPLATE_DEFAULT = os.path.join(TEMPLATES_DIR, "carta_oferta_cramer.docx")
-TEMPLATE_MAP = {
-    "Lucerna 4925, Cerrillos, Santiago": os.path.join(TEMPLATES_DIR, "carta_oferta_cramer.docx"),
-    "Las Encinas 268, Cerrillos, Santiago": os.path.join(TEMPLATES_DIR, "carta_oferta_syf.docx"),
-    
-}
 
-# Ruta del CSV
-CSV_PATH = r"C:\Users\gpavez\Desktop\Compensaciones\Cartas Oferta\info_candidatos(Hoja1).csv"
+# Selección de plantillas
+TEMPLATE_RULES = [
+    
+    # Cramer 
+    {
+        "template": os.path.join(TEMPLATES_DIR, "carta_oferta_cramer.docx"),
+        "criteria": {
+            "lugar_de_trabajo": "Lucerna 4925; Cerrillos; Santiago",
+            "bono": "Normal",
+            "movilizacion": "Normal"
+        }
+    },
+    {
+        "template": os.path.join(TEMPLATES_DIR, "carta_oferta_cramer_partnership.docx"),
+        "criteria": {
+            "lugar_de_trabajo": "Lucerna 4925; Cerrillos; Santiago",
+            "bono": "Especialista Partnership",
+            "movilizacion": "Normal"
+        }
+    },
+    {
+        "template": os.path.join(TEMPLATES_DIR, "carta_oferta_cramer_kam.docx"),
+        "criteria": {
+            "lugar_de_trabajo": "Lucerna 4925; Cerrillos; Santiago",
+            "bono": "KAM",
+            "movilizacion": "Kam + asignación desgaste"
+        }
+    },
+
+    # SyF
+    {
+        "template": os.path.join(TEMPLATES_DIR, "carta_oferta_syf.docx"),
+        "criteria": {
+            "lugar_de_trabajo": "Las Encinas 268; Cerrillos; Santiago",
+            "bono": "Normal",
+            "movilizacion": "Normal"
+        }
+    },
+     {
+        "template": os.path.join(TEMPLATES_DIR, "carta_oferta_syf_partnership.docx"),
+        "criteria": {
+            "lugar_de_trabajo": "Las Encinas 268; Cerrillos; Santiago",
+            "bono": "Especialista Partnership",
+            "movilizacion": "Normal"
+        }
+    },
+    {
+        "template": os.path.join(TEMPLATES_DIR, "carta_oferta_syf_kam.docx"),
+        "criteria": {
+            "lugar_de_trabajo": "Las Encinas 268; Cerrillos; Santiago",
+            "bono": "KAM SyF",
+            "movilizacion": "Kam + asignación desgaste"
+        }
+    },
+]
+
+# Ruta del CSV - Actualizar para buscar en el directorio del script
+CSV_PATH = os.path.join(script_dir, "info_candidatos(Hoja1).csv")
 OUTPUT_FOLDER = "cartas_generadas"
 
 # SOLUCIÓN 2: Verificar si el archivo existe antes de intentar leerlo
@@ -59,14 +123,11 @@ def verificar_plantillas():
         print(f"❌ Directorio de plantillas no encontrado: {TEMPLATES_DIR}")
         return False
     
-    # Verificar plantilla por defecto
-    if not os.path.exists(TEMPLATE_DEFAULT):
-        plantillas_faltantes.append(TEMPLATE_DEFAULT)
-    
-    # Verificar todas las plantillas en el mapa
-    for lugar, plantilla in TEMPLATE_MAP.items():
-        if not os.path.exists(plantilla):
-            plantillas_faltantes.append(plantilla)
+    # Verificar todas las plantillas en las reglas
+    for rule in TEMPLATE_RULES:
+        template_path = rule["template"]
+        if not os.path.exists(template_path):
+            plantillas_faltantes.append(template_path)
     
     if plantillas_faltantes:
         print("❌ Plantillas faltantes:")
@@ -96,7 +157,15 @@ if not verificar_plantillas():
     print(f"   {script_dir}")
     exit(1)
 
-# Buscar el archivo CSV
+# Buscar el archivo CSV usando la función de búsqueda
+csv_encontrado = encontrar_archivo_csv()
+if csv_encontrado:
+    CSV_PATH = csv_encontrado
+else:
+    print(f"❌ No se pudo encontrar el archivo CSV en ninguna ubicación.")
+    exit(1)
+
+# Verificar que el archivo CSV existe
 if not os.path.exists(CSV_PATH):
     print(f"❌ Archivo CSV no encontrado en: {CSV_PATH}")
     print(f"Directorio de trabajo actual: {os.getcwd()}")
@@ -141,11 +210,13 @@ def formatear_valor_monetario(valor):
         # Eliminar cualquier símbolo de moneda existente
         valor_str = valor_str.replace('$', '').strip()
         
-        # Eliminar puntos (separadores de miles) y reemplazar comas por puntos (separador decimal)
-        valor_limpio = valor_str.replace('.', '')
-        
-        # Convertir a número entero
-        valor_entero = int(float(valor_limpio))
+        # Si es un float, convertir primero a entero
+        if '.' in valor_str and valor_str.replace('.', '').replace('-', '').isdigit():
+            valor_entero = int(float(valor_str))
+        else:
+            # Eliminar puntos (separadores de miles) 
+            valor_limpio = valor_str.replace('.', '').replace(',', '')
+            valor_entero = int(valor_limpio)
         
         # Formatear con separador de miles usando punto
         return f"$ {valor_entero:,}".replace(",", ".")
@@ -183,8 +254,7 @@ def obtener_nombre_disponible(base_path):
 CAMPOS_OBLIGATORIOS = [
     'fecha_cierre', 'nombre', 'cargo', 'lugar_de_trabajo', 'jornada_de_trabajo', 
     'tipo_de_contrato', 'fecha_de_inicio', 'gerencia', 'sueldo_base', "bono","movilizacion",
-    'correo_analista' 
-    #'gratificacion', 'movilizacion', 'total_haberes', 'liquido_aproximado', 
+    'correo_analista', "status"
 ]
 
 # Valores predeterminados para campos que podrían faltar
@@ -199,6 +269,92 @@ procesados = 0
 omitidos = 0
 ya_generados = 0
 
+# función para seleccionar plantilla según reglas
+def seleccionar_plantilla(row_dict):
+    # 1. Buscar coincidencia exacta en reglas
+    for rule in TEMPLATE_RULES:
+        match = True
+        for campo, valor in rule["criteria"].items():
+            if str(row_dict.get(campo, "")).strip() != str(valor):
+                match = False
+                break
+        if match:
+            return rule["template"]
+    
+    # 2. Fallback: usar plantilla por defecto
+    print(f"⚠️ No se encontró plantilla específica para los criterios. Usando plantilla por defecto.")
+    return TEMPLATE_DEFAULT
+
+# Función para calcular valores automáticamente desde sueldo base
+def calcular_valores_automaticos(sueldo_base, tipo_movilizacion="Normal"):
+    """
+    Calcula gratificación, movilización, total_haberes y líquido_aproximado
+    a partir del sueldo base usando Fonasa y AFP Uno
+    tipo_movilizacion: "Normal" o "Kam + asignación desgaste"
+    """
+    try:
+        # Convertir sueldo_base a número si viene como string
+        if isinstance(sueldo_base, str):
+            sueldo_base = float(sueldo_base.replace('$', '').replace('.', '').replace(',', ''))
+        
+        sueldo_base = float(sueldo_base)
+        
+        # Parámetros fijos
+        ingreso_minimo = 529_000
+        uf = 39_383
+        tasa_afp = 0.1049
+        tasa_fonasa = 0.07
+        tasa_cesantia = 0.006
+        
+        # Calcular movilización según tipo
+        if tipo_movilizacion == "Kam + asignación desgaste":
+            movilizacion = 250_000 + 125_000  # 375.000 total
+        else:  # "Normal" u otros casos
+            movilizacion = 40_000
+        
+        # Calcular gratificación legal
+        tope_gratificacion_mensual = 4.75 * ingreso_minimo / 12
+        gratificacion = min(0.25 * sueldo_base, tope_gratificacion_mensual)
+        
+        # Total imponible
+        imponible = sueldo_base + gratificacion
+        
+        # Topes imponibles
+        max_imponible_afp_salud = 87.8 * uf
+        max_imponible_seguro_cesantia = 131.8 * uf
+        
+        # Descuentos
+        cotiz_prev = min(imponible * tasa_afp, max_imponible_afp_salud * tasa_afp)
+        cotiz_salud = min(imponible * tasa_fonasa, max_imponible_afp_salud * tasa_fonasa)
+        cesantia = min(imponible * tasa_cesantia, max_imponible_seguro_cesantia * tasa_cesantia)
+        
+        # Base tributable e impuesto
+        base_tributable = imponible - (cotiz_prev + cotiz_salud + cesantia)
+        impuesto = impuesto_unico(base_tributable)
+        
+        # Cálculos finales
+        total_descuentos = cotiz_prev + cotiz_salud + cesantia + impuesto
+        total_haberes = imponible + movilizacion
+        liquido_aproximado = total_haberes - total_descuentos
+        
+        return {
+            'gratificacion': gratificacion,
+            'movilizacion': movilizacion,
+            'total_haberes': total_haberes,
+            'liquido_aproximado': liquido_aproximado
+        }
+        
+    except Exception as e:
+        print(f"Error en cálculo automático: {e}")
+        # Aplicar movilización según tipo incluso en caso de error
+        movilizacion_error = 375_000 if tipo_movilizacion == "Kam + asignación desgaste" else 40_000
+        return {
+            'gratificacion': 0,
+            'movilizacion': movilizacion_error,
+            'total_haberes': sueldo_base + movilizacion_error,
+            'liquido_aproximado': sueldo_base * 0.8  # Estimación conservadora
+        }
+
 # Procesar cada candidato
 for index, row in df.iterrows():
     try:
@@ -210,7 +366,7 @@ for index, row in df.iterrows():
         # Verificar el estado del registro
         status = str(row_dict.get('status', '')).strip().lower()
         if 'status' in row_dict and status != 'pendiente':
-            print(f"⏭️ Registro {index} omitido: estado '{status}' (no es 'pendiente')")
+            print(f" Registro {index} omitido: estado '{status}' (no es 'pendiente')")
             ya_generados += 1
             continue
         
@@ -237,13 +393,21 @@ for index, row in df.iterrows():
             omitidos += 1
             continue
 
-        # 1. Obtener dirección 
-        lugar = row_dict.get('lugar_de_trabajo', VALORES_PREDETERMINADOS['lugar_de_trabajo'])
+        # NUEVO: Calcular valores automáticamente desde sueldo_base
+        sueldo_base = row_dict.get('sueldo_base', 0)
+        tipo_movilizacion = row_dict.get('movilizacion', 'Normal')  # Obtener tipo de movilización del CSV
+        valores_calculados = calcular_valores_automaticos(sueldo_base, tipo_movilizacion)
         
-        # 2. Selecciono plantilla según el lugar
-        template_path = TEMPLATE_MAP.get(lugar, TEMPLATE_DEFAULT)
-        print(f"DEBUG: Usando plantilla '{template_path}' para lugar '{lugar}'")
-        
+        # Agregar valores calculados al diccionario
+        row_dict.update(valores_calculados)
+        print(f"DEBUG - Valores calculados automáticamente (movilización: {tipo_movilizacion}):")
+        for campo, valor in valores_calculados.items():
+            print(f"  {campo}: {valor:,.0f}")
+
+        # 1. Selección de plantilla usando la nueva función
+        template_path = seleccionar_plantilla(row_dict)
+        print(f"DEBUG: Usando plantilla '{template_path}' para criterios {row_dict}")
+
         # Verificar que la plantilla existe
         if not os.path.exists(template_path):
             print(f"⚠️ Plantilla no encontrada: {template_path}")
@@ -259,7 +423,7 @@ for index, row in df.iterrows():
         print(f"DEBUG - tipo_de_contrato original: {row_dict.get('tipo_de_contrato', 'No disponible')}")
         print(f"DEBUG - fecha_de_inicio original: {row_dict.get('fecha_de_inicio', 'No disponible')}")
         
-        # Valores monetarios (mostrar antes y después del formateo)
+        # Valores monetarios (formatear los calculados y el sueldo base)
         monetarios = [
             'sueldo_base', 'gratificacion', 'movilizacion', 'total_haberes', 
             'liquido_aproximado'

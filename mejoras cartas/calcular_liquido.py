@@ -21,7 +21,7 @@ def impuesto_unico(imponible):
     return 0.0
 
 
-def calcular_liquido_desde_base(sueldo_base, tipo_salud="fonasa", valor_isapre_uf=None):
+def calcular_liquido_desde_base(sueldo_base, tipo_salud="fonasa", valor_isapre_uf=None, verbose=True):
     '''
     Calcula el sueldo líquido a partir del sueldo base.
     tipo_salud: "fonasa" o "isapre"
@@ -103,44 +103,47 @@ def calcular_liquido_desde_base(sueldo_base, tipo_salud="fonasa", valor_isapre_u
     sis_empleador = min(imponible * tasa_sis, tope_imponible_pesos_afp_salud * tasa_sis)
     costo_empleador = imponible + cesantia_empleador + sis_empleador
 
-    print(f"\n\n")
-    print(f"CÁLCULO DE SUELDO LÍQUIDO")
-    print(f"\nSueldo base de ${sueldo_base:,.0f}")
-    
-    print(f'\n--- HABERES ---')
-    print(f'Sueldo base: ${sueldo_base:,.0f}')
-    print(f"Gratificación legal: ${gratificacion:,.0f}")
-    print(f"Total Imponible: ${imponible:,.0f}")
-    print(f"Haberes no imponibles: ${movilizacion:,.0f}")
-    print(f"TOTAL HABERES: ${total_haberes:,.0f}")
-    
-    print(f"\n--- DESCUENTOS TRABAJADOR ---")
-    print(f" - AFP ({tasa_afp*100:.2f}%): ${cotiz_prev:,.0f}")
-    print(texto_salud)
-    print(f" - Seguro Cesantía ({tasa_cesantia_trabajador*100:.1f}%): ${cesantia:,.0f}")
-    print(f" - Impuesto 2ª Cat.: ${impuesto2cat:,.0f}")
-    print(f"TOTAL DESCUENTOS: ${total_descuentos:,.0f}")
-    
-    print(f"\n--- RESULTADO TRABAJADOR ---")
-    print(f"Base Tributable: ${base_tributable:,.0f}")
-    print(f"SUELDO LÍQUIDO: ${sueldo_liquido:,.0f}")
-    
-    print(f"\n--- COSTOS EMPLEADOR ---")
-    print(f"Imponible: ${imponible:,.0f}")
-    print(f"SIS ({tasa_sis*100:.2f}%): ${sis_empleador:,.0f}")
-    print(f"Seguro Cesantía empleador ({tasa_cesantia_empleador*100:.1f}%): ${cesantia_empleador:,.0f}")
-    print(f"COSTO TOTAL EMPLEADOR: ${costo_empleador:,.0f}")
+    # Solo imprimir si verbose=True
+    if verbose:
+        print(f"\n\n")
+        print(f"CÁLCULO DE SUELDO LÍQUIDO")
+        print(f"\nSueldo base de ${sueldo_base:,.0f}")
+        print(f"Sueldo Líquido: ${sueldo_liquido:,.0f}")
+        
+        print(f'\n--- HABERES ---')
+        print(f'Sueldo base: ${sueldo_base:,.0f}')
+        print(f"Gratificación legal: ${gratificacion:,.0f}")
+        print(f"Total Imponible: ${imponible:,.0f}")
+        print(f"Haberes no imponibles: ${movilizacion:,.0f}")
+        print(f"TOTAL HABERES: ${total_haberes:,.0f}")
+        
+        print(f"\n--- DESCUENTOS TRABAJADOR ---")
+        print(f" - AFP ({tasa_afp*100:.2f}%): ${cotiz_prev:,.0f}")
+        print(texto_salud)
+        print(f" - Seguro Cesantía ({tasa_cesantia_trabajador*100:.1f}%): ${cesantia:,.0f}")
+        print(f" - Impuesto 2ª Cat.: ${impuesto2cat:,.0f}")
+        print(f"TOTAL DESCUENTOS: ${total_descuentos:,.0f}")
+        
+        # print(f"\n--- RESULTADO TRABAJADOR ---")
+        # print(f"Base Tributable: ${base_tributable:,.0f}")
+        # print(f"SUELDO LÍQUIDO: ${sueldo_liquido:,.0f}")
+        
+        # print(f"\n--- COSTOS EMPLEADOR ---")
+        # print(f"Imponible: ${imponible:,.0f}")
+        # print(f"SIS ({tasa_sis*100:.2f}%): ${sis_empleador:,.0f}")
+        # print(f"Seguro Cesantía empleador ({tasa_cesantia_empleador*100:.1f}%): ${cesantia_empleador:,.0f}")
+        # print(f"COSTO TOTAL EMPLEADOR: ${costo_empleador:,.0f}")
 
-    # Información técnica
-    print(f"\n--- INFORMACIÓN TÉCNICA ---")
-    print(f"Valor UF utilizado: ${uf:,.3f}")
-    #print(f"Tope AFP/Salud: {max_imponible_afp_salud}UF = ${tope_imponible_pesos_afp_salud:,.0f}")
-    #print(f"Tope Cesantía: {max_imponible_seguro_cesantia}UF = ${tope_imponible_seguro_cesantia_pesos:,.0f}")
-    if imponible > tope_imponible_pesos_afp_salud:
-        print(f"Se alcanzó el tope imponible AFP/Salud")
-    if imponible > tope_imponible_seguro_cesantia_pesos:
-        print(f"Se alcanzó el tope imponible Cesantía")
-    print(f"\n\n")
+        # Información técnica
+        print(f"\n--- INFORMACIÓN TÉCNICA ---")
+        print(f"Valor UF utilizado: ${uf:,.3f}")
+        #print(f"Tope AFP/Salud: {max_imponible_afp_salud}UF = ${tope_imponible_pesos_afp_salud:,.0f}")
+        #print(f"Tope Cesantía: {max_imponible_seguro_cesantia}UF = ${tope_imponible_seguro_cesantia_pesos:,.0f}")
+        if imponible > tope_imponible_pesos_afp_salud:
+            print(f"Se alcanzó el tope imponible AFP/Salud")
+        if imponible > tope_imponible_seguro_cesantia_pesos:
+            print(f"Se alcanzó el tope imponible Cesantía")
+        print(f"\n\n")
     
     return sueldo_liquido
 
