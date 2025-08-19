@@ -271,14 +271,24 @@ ya_generados = 0
 
 # función para seleccionar plantilla según reglas
 def seleccionar_plantilla(row_dict):
+    print(f"DEBUG - Criterios del registro:")
+    print(f"  lugar_de_trabajo: '{row_dict.get('lugar_de_trabajo', '')}'")
+    print(f"  bono: '{row_dict.get('bono', '')}'")
+    print(f"  movilizacion: '{row_dict.get('movilizacion', '')}'")
+    
     # 1. Buscar coincidencia exacta en reglas
-    for rule in TEMPLATE_RULES:
+    for i, rule in enumerate(TEMPLATE_RULES):
+        print(f"\nDEBUG - Evaluando regla {i+1}: {os.path.basename(rule['template'])}")
         match = True
         for campo, valor in rule["criteria"].items():
-            if str(row_dict.get(campo, "")).strip() != str(valor):
+            valor_registro = str(row_dict.get(campo, "")).strip()
+            valor_criterio = str(valor).strip()
+            print(f"  Comparando {campo}: '{valor_registro}' == '{valor_criterio}' -> {valor_registro == valor_criterio}")
+            if valor_registro != valor_criterio:
                 match = False
                 break
         if match:
+            print(f"✓ Plantilla seleccionada: {os.path.basename(rule['template'])}")
             return rule["template"]
     
     # 2. Fallback: usar plantilla por defecto
@@ -306,11 +316,15 @@ def calcular_valores_automaticos(sueldo_base, tipo_movilizacion="Normal"):
         tasa_fonasa = 0.07
         tasa_cesantia = 0.006
         
-        # Calcular movilización según tipo
+        # Calcular movilización y asignación de desgaste según tipo
         if tipo_movilizacion == "Kam + asignación desgaste":
-            movilizacion = 250_000 + 125_000  # 375.000 total
+            movilizacion_kam = 125_000  # Solo movilización KAM
+            asignacion_desgaste = 250_000  # Asignación de desgaste separada
+            movilizacion_total = movilizacion_kam + asignacion_desgaste  # Para cálculos internos
         else:  # "Normal" u otros casos
-            movilizacion = 40_000
+            movilizacion_kam = 40_000  # Movilización normal
+            asignacion_desgaste = 0  # Sin asignación de desgaste
+            movilizacion_total = movilizacion_kam
         
         # Calcular gratificación legal
         tope_gratificacion_mensual = 4.75 * ingreso_minimo / 12
@@ -334,12 +348,14 @@ def calcular_valores_automaticos(sueldo_base, tipo_movilizacion="Normal"):
         
         # Cálculos finales
         total_descuentos = cotiz_prev + cotiz_salud + cesantia + impuesto
-        total_haberes = imponible + movilizacion
+        total_haberes = imponible + movilizacion_total
         liquido_aproximado = total_haberes - total_descuentos
         
         return {
             'gratificacion': gratificacion,
-            'movilizacion': movilizacion,
+            'movilizacion': movilizacion_total,  # Para compatibilidad con plantillas normales
+            'movilizacion_kam': movilizacion_kam,  # Para plantillas KAM
+            'asignación_desgaste': asignacion_desgaste,  # Para plantillas KAM
             'total_haberes': total_haberes,
             'liquido_aproximado': liquido_aproximado
         }
@@ -347,10 +363,20 @@ def calcular_valores_automaticos(sueldo_base, tipo_movilizacion="Normal"):
     except Exception as e:
         print(f"Error en cálculo automático: {e}")
         # Aplicar movilización según tipo incluso en caso de error
-        movilizacion_error = 375_000 if tipo_movilizacion == "Kam + asignación desgaste" else 40_000
+        if tipo_movilizacion == "Kam + asignación desgaste":
+            movilizacion_error = 375_000
+            movilizacion_kam_error = 125_000
+            asignacion_desgaste_error = 250_000
+        else:
+            movilizacion_error = 40_000
+            movilizacion_kam_error = 40_000
+            asignacion_desgaste_error = 0
+            
         return {
             'gratificacion': 0,
             'movilizacion': movilizacion_error,
+            'movilizacion_kam': movilizacion_kam_error,
+            'asignación_desgaste': asignacion_desgaste_error,
             'total_haberes': sueldo_base + movilizacion_error,
             'liquido_aproximado': sueldo_base * 0.8  # Estimación conservadora
         }
@@ -393,7 +419,10 @@ for index, row in df.iterrows():
             omitidos += 1
             continue
 
-        # NUEVO: Calcular valores automáticamente desde sueldo_base
+        # 1. Selección de plantilla ANTES de calcular valores (para preservar valores originales del CSV)
+        template_path = seleccionar_plantilla(row_dict)
+
+        # 2. DESPUÉS calcular valores automáticamente desde sueldo_base
         sueldo_base = row_dict.get('sueldo_base', 0)
         tipo_movilizacion = row_dict.get('movilizacion', 'Normal')  # Obtener tipo de movilización del CSV
         valores_calculados = calcular_valores_automaticos(sueldo_base, tipo_movilizacion)
@@ -404,9 +433,7 @@ for index, row in df.iterrows():
         for campo, valor in valores_calculados.items():
             print(f"  {campo}: {valor:,.0f}")
 
-        # 1. Selección de plantilla usando la nueva función
-        template_path = seleccionar_plantilla(row_dict)
-        print(f"DEBUG: Usando plantilla '{template_path}' para criterios {row_dict}")
+        print(f"DEBUG: Usando plantilla '{template_path}'")
 
         # Verificar que la plantilla existe
         if not os.path.exists(template_path):
@@ -425,8 +452,8 @@ for index, row in df.iterrows():
         
         # Valores monetarios (formatear los calculados y el sueldo base)
         monetarios = [
-            'sueldo_base', 'gratificacion', 'movilizacion', 'total_haberes', 
-            'liquido_aproximado'
+            'sueldo_base', 'gratificacion', 'movilizacion', 'movilizacion_kam', 
+            'asignación_desgaste', 'total_haberes', 'liquido_aproximado'
         ]
 
         for campo in monetarios:
