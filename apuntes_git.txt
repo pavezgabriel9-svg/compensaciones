@@ -1,0 +1,15 @@
+Comandos Git
+# descarga las modificaciones alojadas en Git
+git pull
+
+# Estado actual de los archivos
+git status
+
+# Agrega todos los archivos modificados
+git add . 
+
+# Guardar comentarios 
+git commit -m "Descripción de lo que hiciste"
+
+# Subir los cambios 
+git push
