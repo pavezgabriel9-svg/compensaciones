@@ -8,7 +8,7 @@ import os
 from typing import Dict, List, Any, Optional
 
 #-----------------------------------------------------------
-#             Creación de Interfaz de Usuario
+#             iniciando App
 #-----------------------------------------------------------
 
 class CalculadoraSueldos:
@@ -66,11 +66,11 @@ class CalculadoraSueldos:
                         raise ValueError(f"Campo '{campo}' en tramo {i} no es numérico")
             
             # Test básico del cálculo de impuestos
-            test_impuesto = self.impuesto_unico(1000000)  # 1 millón de prueba
-            if test_impuesto is None:
-                raise ValueError("Error en cálculo de impuestos de prueba")
+            # test_impuesto = self.impuesto_unico(1000000)  # 1 millón de prueba
+            # if test_impuesto is None:
+            #     raise ValueError("Error en cálculo de impuestos de prueba")
                 
-            print("✅ Configuración inicial validada correctamente")
+            # print("✅ Configuración inicial validada correctamente")
             
         except Exception as e:
             messagebox.showerror("Error de Configuración", 
@@ -88,8 +88,9 @@ class CalculadoraSueldos:
     def inicializar_variables(self):
         """Inicializa todas las variables de la interfaz"""
         self.sueldo_liquido_var = tk.StringVar()
-        self.afp_var = tk.StringVar(value="AFP Uno (10.49%)")
-        self.salud_var = tk.StringVar(value="Fonasa (7%)")
+        # Variables para el sistema de salud
+        self.tipo_salud_var = tk.StringVar(value="fonasa")  # "fonasa" o "isapre"
+        self.valor_isapre_uf_var = tk.StringVar(value="4.78")  # Valor por defecto en UF
         self.movilizacion_var = tk.StringVar(value="40.000")
         self.bonos: List[Dict[str, Any]] = []
         self.bono_nombre_var = tk.StringVar()
@@ -133,10 +134,13 @@ class CalculadoraSueldos:
             messagebox.showerror("Error", f"Error guardando configuración: {e}")
             return False
 
+#-----------------------------------------------------------
+#             Creación de Interfaz de Usuario
+#-----------------------------------------------------------
+
     def setup_ui(self):
         """Configura la interfaz de usuario"""
         self._crear_titulo()
-        
         # Frame principal
         main_frame = tk.Frame(self.root, bg='#f0f0f0')
         main_frame.pack(fill='both', expand=True, padx=10, pady=10)
@@ -149,19 +153,19 @@ class CalculadoraSueldos:
 
     def _crear_titulo(self):
         """Crea el título de la aplicación"""
-        title_frame = tk.Frame(self.root, bg='#2c3e50', height=60)
+        title_frame = tk.Frame(self.root, bg='#FF0000', height=60)
         title_frame.pack(fill='x')
         title_frame.pack_propagate(False)
         
         title_label = tk.Label(title_frame, text="Calculadora de Sueldos", 
-                              font=('Arial', 14, 'bold'), fg='white', bg='#2c3e50')
+                              font=('Arial', 14, 'bold'), fg='white', bg='#FF0000')
         title_label.pack(expand=True, pady=10)
 
     def _crear_boton_calcular(self, parent):
         """Crea el botón de calcular"""
         calc_button = tk.Button(parent, text="Calcular Sueldo Base", 
                                command=self.calcular, font=('Arial', 13, 'bold'),
-                               bg='#3498db', fg='white', relief='flat', padx=10, pady=10)
+                               bg='#008000', fg='#111111', relief='flat', padx=10, pady=10)
         calc_button.pack(pady=10, fill='x')
 
     def _crear_info_parametros(self, parent):
@@ -194,7 +198,7 @@ class CalculadoraSueldos:
 
     def _crear_campo_sueldo(self, parent):
         """Crea el campo de sueldo líquido"""
-        tk.Label(parent, text="Sueldo Líquido Deseado ($):", 
+        tk.Label(parent, fg='#000000' ,text="Sueldo Líquido Deseado ($):", 
                 font=('Arial', 10), bg='#f0f0f0').grid(row=0, column=0, sticky='e', padx=5, pady=5)
         sueldo_entry = tk.Entry(parent, textvariable=self.sueldo_liquido_var, 
                                font=('Arial', 12), width=13)
@@ -202,23 +206,100 @@ class CalculadoraSueldos:
         sueldo_entry.bind('<KeyRelease>', self._format_currency_sueldo)
 
     def _crear_campo_afp(self, parent):
-        """Crea el campo de AFP"""
+        """Crea el campo de AFP estático"""
         tk.Label(parent, text="AFP:", font=('Arial', 10), bg='#f0f0f0').grid(
             row=1, column=0, sticky='e', padx=5, pady=5)
-        afp_combo = ttk.Combobox(parent, textvariable=self.afp_var, width=18, state='readonly')
-        afp_combo['values'] = (
-            'AFP Uno (10.49%)', 'Cuprum (10.44%)', 'Habitat (10.77%)',
-            'Planvital (10.16%)', 'ProVida (10.55%)', 'Capital (11.44%)', 'Modelo (10.58%)'
-        )
-        afp_combo.grid(row=1, column=1, padx=5, pady=5)
+        
+        # Label estático que muestra la tasa de AFP configurada
+        self.afp_label = tk.Label(parent, text=f"{self.parametros['tasa_afp']*100:.2f}%", 
+                                 font=('Arial', 12), bg='white', fg='#2c3e50', 
+                                 relief='solid', borderwidth=1, padx=10, pady=3, width=16)
+        self.afp_label.grid(row=1, column=1, padx=5, pady=5)
 
     def _crear_campo_salud(self, parent):
-        """Crea el campo de sistema de salud"""
+        """Crea el campo de sistema de salud con checkboxes"""
         tk.Label(parent, text="Salud:", font=('Arial', 10), bg='#f0f0f0').grid(
-            row=2, column=0, sticky='e', padx=5, pady=5)
-        salud_combo = ttk.Combobox(parent, textvariable=self.salud_var, width=18, state='readonly')
-        salud_combo['values'] = ('Fonasa (7%)', 'Isapre (7% + plan)')
-        salud_combo.grid(row=2, column=1, padx=5, pady=5)
+            row=2, column=0, sticky='ne', padx=5, pady=5)
+        
+        # Frame para los checkboxes y campo UF
+        salud_frame = tk.Frame(parent, bg='#f0f0f0')
+        salud_frame.grid(row=2, column=1, padx=5, pady=5, sticky='w')
+        
+        # Checkbox Fonasa
+        self.fonasa_check = tk.Radiobutton(salud_frame, text=f"Fonasa ({self.parametros['tasa_salud']*100:.1f}%)", 
+                                          variable=self.tipo_salud_var, value="fonasa",
+                                          bg='#f0f0f0', font=('Arial', 9),
+                                          command=self._actualizar_interfaz_salud)
+        self.fonasa_check.pack(anchor='w')
+        
+        # Checkbox Isapre con campo UF
+        isapre_frame = tk.Frame(salud_frame, bg='#f0f0f0')
+        isapre_frame.pack(anchor='w', fill='x')
+        
+        self.isapre_check = tk.Radiobutton(isapre_frame, text="Isapre", 
+                                          variable=self.tipo_salud_var, value="isapre",
+                                          bg='#f0f0f0', font=('Arial', 9),
+                                          command=self._actualizar_interfaz_salud)
+        self.isapre_check.pack(side='left')
+        
+        # Campo para valor UF de Isapre
+        tk.Label(isapre_frame, text="UF:", bg='#f0f0f0', font=('Arial', 9)).pack(side='left', padx=(5, 2))
+        self.isapre_uf_entry = tk.Entry(isapre_frame, textvariable=self.valor_isapre_uf_var, 
+                                       width=6, font=('Arial', 9), state='disabled')
+        self.isapre_uf_entry.pack(side='left', padx=(0, 5))
+        
+        # Label para mostrar valor en pesos
+        self.isapre_pesos_label = tk.Label(isapre_frame, text="", bg='#f0f0f0', 
+                                          font=('Arial', 8), fg='#7f8c8d')
+        self.isapre_pesos_label.pack(side='left')
+        
+        # Inicializar estado
+        self._actualizar_interfaz_salud()
+        
+        # Bind para actualizar valor en pesos cuando cambie UF
+        self.valor_isapre_uf_var.trace('w', lambda *args: self._actualizar_valor_isapre_pesos())
+
+    def _actualizar_interfaz_salud(self):
+        """Actualiza la interfaz según el tipo de salud seleccionado"""
+        if self.tipo_salud_var.get() == "fonasa":
+            self.isapre_uf_entry.config(state='disabled')
+            self.isapre_pesos_label.config(text="")
+        else:  # isapre
+            self.isapre_uf_entry.config(state='normal')
+            self._actualizar_valor_isapre_pesos()
+
+    def _actualizar_valor_isapre_pesos(self):
+        """Actualiza el valor en pesos de la Isapre"""
+        try:
+            if self.tipo_salud_var.get() == "isapre":
+                uf_valor = float(self.valor_isapre_uf_var.get())
+                pesos = uf_valor * self.parametros['valor_uf']
+                self.isapre_pesos_label.config(text=f"(${pesos:,.0f})".replace(',', '.'))
+            else:
+                self.isapre_pesos_label.config(text="")
+        except (ValueError, TypeError):
+            self.isapre_pesos_label.config(text="(Error)")
+
+    def get_cotizacion_salud(self, imponible: float) -> tuple[float, str]:
+        """
+        Calcula la cotización de salud según el tipo seleccionado
+        Retorna: (monto_cotizacion, descripcion_texto)
+        """
+        if self.tipo_salud_var.get() == "fonasa":
+            # Fonasa: porcentaje del imponible con tope
+            tope_imponible_pesos = self.parametros["tope_imponible_uf"] * self.parametros["valor_uf"]
+            cotizacion = min(imponible * self.parametros["tasa_salud"], tope_imponible_pesos * self.parametros["tasa_salud"])
+            descripcion = f"Fonasa ({self.parametros['tasa_salud']*100:.1f}%)"
+            return cotizacion, descripcion
+        else:
+            # Isapre: valor fijo en UF convertido a pesos
+            try:
+                uf_valor = float(self.valor_isapre_uf_var.get())
+                cotizacion = uf_valor * self.parametros["valor_uf"]
+                descripcion = f"Isapre ({uf_valor} UF)"
+                return cotizacion, descripcion
+            except (ValueError, TypeError):
+                return 0.0, "Isapre (Error en UF)"
 
     def _crear_campo_movilizacion(self, parent):
         """Crea el campo de movilización"""
@@ -449,8 +530,11 @@ class CalculadoraSueldos:
         self.tope_grat_label = tk.Label(calc_frame, text="", font=('Arial', 9), bg='#f0f0f0', fg='#7f8c8d')
         self.tope_grat_label.pack(pady=2)
 
-        self.tope_imp_label = tk.Label(calc_frame, text="", font=('Arial', 9), bg='#f0f0f0', fg='#7f8c8d')
-        self.tope_imp_label.pack(pady=2)
+        self.tope_afp_salud_label = tk.Label(calc_frame, text="", font=('Arial', 9), bg='#f0f0f0', fg='#7f8c8d')
+        self.tope_afp_salud_label.pack(pady=2)
+        
+        self.tope_cesantia_label = tk.Label(calc_frame, text="", font=('Arial', 9), bg='#f0f0f0', fg='#7f8c8d')
+        self.tope_cesantia_label.pack(pady=2)
 
         # Actualizar labels calculados
         self.actualizar_labels_calculados()
@@ -459,94 +543,29 @@ class CalculadoraSueldos:
         for var in self.param_vars.values():
             var.trace('w', lambda *args: self.actualizar_labels_calculados())
 
-    def _crear_botones_parametros(self, parent, win):
-        """Crea los botones de la ventana de parámetros"""
-        btn_frame = tk.Frame(parent, bg='#f0f0f0')
-        btn_frame.pack(pady=15)
-
-        # BOTÓN PRINCIPAL: Guardar y Aplicar (más prominente)
-        tk.Button(btn_frame, text="Guardar y Aplicar", command=lambda: self.guardar_parametros(win), 
-                 bg='#27ae60', fg='white', font=('Arial', 12, 'bold'), relief='flat', padx=25, pady=12).pack(side='left', padx=8)
-        
-        # # Botón secundario: Aplicar sin guardar
-        # tk.Button(btn_frame, text="✅ Aplicar (sin guardar)", command=lambda: self.aplicar_parametros_temporalmente(win), 
-        #          bg='#3498db', fg='white', font=('Arial', 10, 'bold'), relief='flat', padx=15, pady=8).pack(side='left', padx=5)
-        
-        # tk.Button(btn_frame, text="🔄 Restaurar por Defecto", command=lambda: self.restaurar_defaults(win), 
-        #          bg='#f39c12', fg='white', font=('Arial', 10, 'bold'), relief='flat', padx=15, pady=8).pack(side='left', padx=5)
-        
-        # tk.Button(btn_frame, text="❌ Cancelar", command=win.destroy, 
-        #          bg='#95a5a6', fg='white', font=('Arial', 10, 'bold'), relief='flat', padx=15, pady=8).pack(side='left', padx=5)
-
     def actualizar_labels_calculados(self):
         """Actualiza los labels de parámetros calculados en tiempo real"""
         try:
             ingreso_min = self._parse_currency(self.param_vars["ingreso_minimo"].get())
             valor_uf = self._parse_currency(self.param_vars["valor_uf"].get())
-            #tope_uf = float(self.param_vars["tope_imponible_uf"].get())
-            #factor_grat = float(self.param_vars["factor_gratificacion"].get())
+            tope_uf = float(self.param_vars["tope_imponible_uf"].get())
             factor_grat = self.parametros["factor_gratificacion"]
+            
             tope_grat = factor_grat * ingreso_min / 12
-            #tope_imp_pesos = tope_uf * valor_uf
+            tope_afp_salud_pesos = tope_uf * valor_uf
+            tope_cesantia_pesos = 131.8 * valor_uf
             
             self.tope_grat_label.config(text=f"Tope gratificación: ${tope_grat:,.0f}".replace(',', '.'))
-            #self.tope_imp_label.config(text=f"Tope imponible: ${tope_imp_pesos:,.2f}".replace(',', '.'))
+            self.tope_afp_salud_label.config(text=f"Tope AFP/Salud: ${tope_afp_salud_pesos:,.0f}".replace(',', '.'))
+            self.tope_cesantia_label.config(text=f"Tope Seguro Cesantía: ${tope_cesantia_pesos:,.0f}".replace(',', '.'))
         except (ValueError, KeyError):
             self.tope_grat_label.config(text="Tope gratificación: Error en cálculo")
-            self.tope_imp_label.config(text="Tope imponible: Error en cálculo")
+            self.tope_afp_salud_label.config(text="Tope AFP/Salud: Error en cálculo")
+            self.tope_cesantia_label.config(text="Tope Seguro Cesantía: Error en cálculo")
 
     def _parse_currency(self, value: str) -> float:
         """Convierte string de moneda a float"""
         return float(value.replace('.', '').replace(',', ''))
-
-    # def restaurar_defaults(self, win):
-    #     """Restaura los valores por defecto"""
-    #     if messagebox.askyesno("Confirmar", "¿Restaurar todos los valores por defecto?\n\nEsto incluye parámetros y tramos de impuesto."):
-    #         self.parametros = self.parametros_default.copy()
-    #         self.tramos_impuesto = self.tramos_default.copy()
-            
-    #         # Actualizar campos en la ventana
-    #         for key, var in self.param_vars.items():
-    #             var.set(str(self.parametros[key]))
-            
-    #         messagebox.showinfo("Restaurado", "¡Valores por defecto restaurados!")
-
-    # def aplicar_parametros_temporalmente(self, win):
-    #     """Aplica los parámetros sin guardar en archivo (solo para la sesión actual)"""
-    #     try:
-    #         # Validar y aplicar parámetros temporalmente
-    #         parametros_temp = {}
-    #         for key, var in self.param_vars.items():
-    #             val_str = var.get().replace('.', '').replace(',', '')
-    #             if key in ["tasa_afp", "tasa_salud", "tasa_cesant", "factor_gratificacion", "porcentaje_gratificacion","tope_imponible_uf"]:
-    #                 parametros_temp[key] = float(var.get())
-    #             else:
-    #                 parametros_temp[key] = int(val_str) if val_str.isdigit() else float(val_str)
-            
-    #         # Validar valores temporales
-    #         self._validar_parametros_temp(parametros_temp)
-            
-    #         # Aplicar cambios temporalmente
-    #         self.parametros = parametros_temp
-            
-    #         # Actualizar info en ventana principal
-    #         self.info_label.config(text=self.get_info_parametros())
-    #         messagebox.showinfo("Aplicado", "¡Parámetros aplicados para esta sesión!\n\nNota: Los cambios no se han guardado permanentemente.")
-    #         win.destroy()
-            
-    #     except Exception as e:
-    #         messagebox.showerror("Error", f"Revisa los valores ingresados: {e}")
-
-    def _validar_parametros_temp(self, parametros_temp):
-        """Valida que los parámetros temporales sean correctos"""
-        if parametros_temp["ingreso_minimo"] <= 0:
-            raise ValueError("El ingreso mínimo debe ser mayor a 0")
-        if parametros_temp["valor_uf"] <= 0:
-            raise ValueError("El valor UF debe ser mayor a 0")
-        if not (0 < parametros_temp["tasa_afp"] < 1):
-            raise ValueError("La tasa AFP debe estar entre 0 y 1")
-        if not (0 < parametros_temp["tasa_salud"] < 1):
-            raise ValueError("La tasa de salud debe estar entre 0 y 1")
 
     def guardar_parametros(self, win):
         """Guarda los parámetros modificados permanentemente"""
@@ -566,6 +585,8 @@ class CalculadoraSueldos:
             if self.guardar_configuracion():
                 # Actualizar info en ventana principal
                 self.info_label.config(text=self.get_info_parametros())
+                # Actualizar visualización de AFP
+                self.actualizar_interface_afp()
                 messagebox.showinfo("Guardado", "¡Parámetros guardados correctamente!")
                 win.destroy()
             
@@ -829,20 +850,14 @@ class CalculadoraSueldos:
     #                       Cálculo Mejorado
     #-----------------------------------------------------------
     def get_tasa_afp(self) -> float:
-        """Obtiene la tasa de AFP seleccionada"""
-        afp_tasas = {
-            'AFP Uno (10.49%)': 0.1049,
-            'Cuprum (10.44%)': 0.1044,
-            'Habitat (10.77%)': 0.1077,
-            'Planvital (10.16%)': 0.1016,
-            'ProVida (10.55%)': 0.1055,
-            'Capital (11.44%)': 0.1144,
-            'Modelo (10.58%)': 0.1058
-        }
-        return afp_tasas.get(self.afp_var.get(), self.parametros["tasa_afp"])
+        """Obtiene la tasa de AFP configurada en parámetros"""
+        return self.parametros["tasa_afp"]
 
     def impuesto_unico(self, imponible: float) -> float:
-        """Calcula impuesto único según tramos configurados"""
+        """
+        Calcula impuesto único según tramos configurados
+        Tramos SII agosto 2025 (pesos mensuales)
+        """
         # Validación de entrada
         if imponible <= 0:
             return 0.0
@@ -851,34 +866,152 @@ class CalculadoraSueldos:
             print("Error: No hay tramos de impuesto configurados")
             return 0.0
             
-        # Buscar tramo aplicable
-        tramo_aplicable = None
+        # Buscar tramo aplicable usando la estructura de tramos de la app
         for tramo in self.tramos_impuesto:
             if tramo['desde'] <= imponible <= tramo['hasta']:
-                tramo_aplicable = tramo
-                break
+                impuesto = imponible * tramo['tasa'] - tramo['rebaja']
+                return max(impuesto, 0.0)
         
         # Si no encuentra tramo exacto, usar el último tramo para montos altos
-        if tramo_aplicable is None:
-            # Ordenar tramos por 'desde' para asegurar orden correcto
-            tramos_ordenados = sorted(self.tramos_impuesto, key=lambda x: x['desde'])
-            
-            # Si el monto es mayor al último tramo, usar el último
-            if imponible > tramos_ordenados[-1]['desde']:
-                tramo_aplicable = tramos_ordenados[-1]
-            else:
-                # Si es menor al primer tramo, usar el primero
-                tramo_aplicable = tramos_ordenados[0]
-        
-        if tramo_aplicable:
-            try:
-                impuesto = imponible * tramo_aplicable['tasa'] - tramo_aplicable['rebaja']
-                return max(impuesto, 0.0)
-            except (KeyError, TypeError) as e:
-                print(f"Error en cálculo de impuesto con tramo {tramo_aplicable}: {e}")
-                return 0.0
+        tramos_ordenados = sorted(self.tramos_impuesto, key=lambda x: x['desde'])
+        if imponible > tramos_ordenados[-1]['desde']:
+            tramo_aplicable = tramos_ordenados[-1]
+            impuesto = imponible * tramo_aplicable['tasa'] - tramo_aplicable['rebaja']
+            return max(impuesto, 0.0)
         
         return 0.0
+
+    def _calcular_sueldo_base_hibrido(self, sueldo_liquido_deseado: int, movilizacion: int) -> Dict[str, Any]:
+        """
+        Método basado en calcular_base.py - Calcula el sueldo base necesario para alcanzar un sueldo líquido deseado
+        usando búsqueda binaria con precisión adaptativa
+        """
+        try:
+            # ----------------------------------------------------------
+            # Parámetros - adaptados de la configuración de la app
+            # ----------------------------------------------------------
+            ingreso_minimo = self.parametros["ingreso_minimo"]
+            uf = self.parametros["valor_uf"]
+            max_imponible_afp_salud = self.parametros["tope_imponible_uf"]  # Tope imponible AFP y salud
+            max_imponible_seguro_cesantia = 131.8  # Tope imponible Seguro Cesantía
+            
+            # Tasas y topes
+            tasa_afp = self.get_tasa_afp()
+            tasa_cesantia_trabajador = self.parametros["tasa_cesant"]
+            
+            # Conversión tope imponible (UF) a pesos
+            tope_imponible_pesos_afp_salud = max_imponible_afp_salud * uf
+            tope_imponible_seguro_cesantia_pesos = max_imponible_seguro_cesantia * uf
+            
+            # Suma de bonos
+            total_bonos_imponibles = sum(b["monto"] for b in self.bonos if b.get("imponible", False))
+            total_bonos_no_imponibles = sum(b["monto"] for b in self.bonos if not b.get("imponible", False))
+            
+            precision = max(10, min(1000, sueldo_liquido_deseado * 0.001))
+
+            # Función para estimar el líquido desde un sueldo base
+            def estimar_liquido(sueldo_base):
+                tope_gratificacion_mensual = self.parametros["factor_gratificacion"] * ingreso_minimo / 12
+                gratificacion = min(self.parametros["porcentaje_gratificacion"] * sueldo_base, tope_gratificacion_mensual)
+
+                imponible = sueldo_base + gratificacion + total_bonos_imponibles
+
+                # Aplicar topes según calcular_base.py
+                cotiz_prev = min(imponible * tasa_afp, tope_imponible_pesos_afp_salud * tasa_afp)
+                
+                # Calcular cotización de salud según tipo seleccionado con tope correcto
+                if self.tipo_salud_var.get() == "fonasa":
+                    cotiz_salud = min(imponible * self.parametros["tasa_salud"], tope_imponible_pesos_afp_salud * self.parametros["tasa_salud"])
+                else:
+                    cotiz_salud, _ = self.get_cotizacion_salud(imponible)
+                
+                cesantia = min(imponible * tasa_cesantia_trabajador, tope_imponible_seguro_cesantia_pesos * tasa_cesantia_trabajador)
+
+                base_tributable = imponible - (cotiz_prev + cotiz_salud + cesantia)
+                impuesto2cat = self.impuesto_unico(base_tributable)
+
+                total_descuentos = cotiz_prev + cotiz_salud + cesantia + impuesto2cat
+                total_haberes = imponible + movilizacion + total_bonos_no_imponibles
+                return total_haberes - total_descuentos
+
+            # Rango inicial dinámico
+            sueldo_min = 0
+            sueldo_max = sueldo_liquido_deseado
+            while estimar_liquido(sueldo_max) < sueldo_liquido_deseado:
+                sueldo_max *= 2  # Duplicar hasta encontrar un rango que contenga el sueldo deseado
+            
+            # Búsqueda binaria
+            iteraciones = 0
+            max_iterations = 50
+            
+            while sueldo_max - sueldo_min > precision and iteraciones < max_iterations:
+                sueldo_base = (sueldo_min + sueldo_max) / 2
+                sueldo_liquido_calculado = estimar_liquido(sueldo_base)
+                
+                if sueldo_liquido_calculado < sueldo_liquido_deseado:
+                    sueldo_min = sueldo_base
+                else:
+                    sueldo_max = sueldo_base
+                
+                iteraciones += 1
+            
+            sueldo_base = round(sueldo_base)
+            
+            # Recalculamos todo con el sueldo base encontrado
+            tope_grat_mensual = self.parametros["factor_gratificacion"] * ingreso_minimo / 12
+            gratificacion = min(self.parametros["porcentaje_gratificacion"] * sueldo_base, tope_grat_mensual)
+            imponible = sueldo_base + gratificacion + total_bonos_imponibles
+            
+            # Aplicar topes correctamente según calcular_base.py
+            cotiz_prev = min(imponible * tasa_afp, tope_imponible_pesos_afp_salud * tasa_afp)
+            
+            # Calcular cotización de salud con tope correcto
+            if self.tipo_salud_var.get() == "fonasa":
+                cotiz_salud = min(imponible * self.parametros["tasa_salud"], tope_imponible_pesos_afp_salud * self.parametros["tasa_salud"])
+                descripcion_salud = f"Fonasa ({self.parametros['tasa_salud']*100:.1f}%)"
+            else:
+                cotiz_salud, descripcion_salud = self.get_cotizacion_salud(imponible)
+            
+            cesantia = min(imponible * tasa_cesantia_trabajador, tope_imponible_seguro_cesantia_pesos * tasa_cesantia_trabajador)
+            
+            base_tributable = imponible - (cotiz_prev + cotiz_salud + cesantia)
+            impuesto2cat = self.impuesto_unico(base_tributable)
+            total_descuentos = cotiz_prev + cotiz_salud + cesantia + impuesto2cat
+            total_haberes = imponible + movilizacion + total_bonos_no_imponibles
+            sueldo_liquido = total_haberes - total_descuentos
+            
+            # Detectar si se alcanzaron los topes
+            tope_afp_salud_alcanzado = imponible > tope_imponible_pesos_afp_salud
+            tope_cesantia_alcanzado = imponible > tope_imponible_seguro_cesantia_pesos
+            
+            return {
+                'deseado': sueldo_liquido_deseado,
+                'base': sueldo_base,
+                'grat': gratificacion,
+                'imponible': imponible,
+                'mov': movilizacion,
+                'afp': cotiz_prev,
+                'salud': cotiz_salud,
+                'cesant': cesantia,
+                'imp': impuesto2cat,
+                'base_trib': base_tributable,
+                'desc': total_descuentos,
+                'hab': total_haberes,
+                'liquido': sueldo_liquido,
+                'bonos_imp': total_bonos_imponibles,
+                'bonos_noimp': total_bonos_no_imponibles,
+                'tope_imp_afp_salud': tope_imponible_pesos_afp_salud,
+                'tope_imp_cesantia': tope_imponible_seguro_cesantia_pesos,
+                'tope_afp_salud_alcanzado': tope_afp_salud_alcanzado,
+                'tope_cesantia_alcanzado': tope_cesantia_alcanzado,
+                'diferencia': sueldo_liquido - sueldo_liquido_deseado,
+                'iteraciones': iteraciones,
+                'descripcion_salud': descripcion_salud
+            }
+            
+        except Exception as e:
+            print(f"Error en _calcular_sueldo_base_hibrido: {e}")
+            return None
 
     def calcular(self):
         """Función principal de cálculo con validaciones mejoradas"""
@@ -945,135 +1078,6 @@ class CalculadoraSueldos:
             messagebox.showerror("Error", f"Error en los datos ingresados: {str(e)}")
         except Exception as e:
             messagebox.showerror("Error", f"Error inesperado en el cálculo: {str(e)}")
-
-    def _calcular_sueldo_base_hibrido(self, sueldo_liquido_deseado: int, movilizacion: int) -> Dict[str, Any]:
-        """Método híbrido mejorado: estimación inicial + búsqueda binaria refinada"""
-        try:
-            # Parámetros
-            ingreso_minimo = self.parametros["ingreso_minimo"]
-            tope_imponible = self.parametros["tope_imponible_uf"] * self.parametros["valor_uf"]
-            tasa_afp = self.get_tasa_afp()
-            tasa_salud = self.parametros["tasa_salud"]
-            tasa_cesant = self.parametros["tasa_cesant"]
-            tope_grat_mensual = self.parametros["factor_gratificacion"] * ingreso_minimo / 12
-
-            # Validar parámetros
-            if any(tasa <= 0 for tasa in [tasa_afp, tasa_salud, tasa_cesant]):
-                raise ValueError("Las tasas de descuento deben ser mayores a 0")
-            
-            if tope_imponible <= 0 or ingreso_minimo <= 0:
-                raise ValueError("Los parámetros básicos deben ser mayores a 0")
-
-            # Suma de bonos con validación
-            total_bonos_imponibles = sum(b["monto"] for b in self.bonos if b.get("imponible", False))
-            total_bonos_no_imponibles = sum(b["monto"] for b in self.bonos if not b.get("imponible", False))
-
-            # 1. Estimación inicial inteligente
-            tasa_descuentos_base = tasa_afp + tasa_salud + tasa_cesant
-            
-            # Estimar impuesto aproximado
-            sueldo_bruto_estimado = sueldo_liquido_deseado / (1 - tasa_descuentos_base - 0.12)  # 12% aprox para impuestos
-            impuesto_estimado = self.impuesto_unico(sueldo_bruto_estimado) / 12 if sueldo_bruto_estimado > 0 else 0
-            
-            # Refinar estimación inicial
-            sueldo_base_inicial = max(
-                (sueldo_liquido_deseado + impuesto_estimado) / (1 - tasa_descuentos_base),
-                sueldo_liquido_deseado * 1.1  # Mínimo 10% más que el líquido deseado
-            )
-            
-            # 2. Búsqueda binaria refinada
-            # Rango de búsqueda más conservador
-            margen_porcentaje = min(0.3, max(0.1, sueldo_liquido_deseado / 10_000_000))  # 10-30% según monto
-            margen = sueldo_base_inicial * margen_porcentaje
-            
-            sueldo_min = max(sueldo_liquido_deseado * 0.8, sueldo_base_inicial - margen)
-            sueldo_max = min(sueldo_liquido_deseado * 4, sueldo_base_inicial + margen)
-            
-            # Precisión adaptativa
-            precision = max(10, min(1000, sueldo_liquido_deseado * 0.001))
-            max_iterations = 40
-            
-            mejor_sueldo_base = sueldo_base_inicial
-            menor_diferencia = float('inf')
-            
-            for iteration in range(max_iterations):
-                if sueldo_max - sueldo_min <= precision:
-                    break
-                    
-                sueldo_base = (sueldo_min + sueldo_max) / 2
-                
-                # Calcular valores intermedios con manejo de errores
-                valores = self._calcular_valores_intermedios_seguro(
-                    sueldo_base, tope_grat_mensual, total_bonos_imponibles, 
-                    tope_imponible, tasa_afp, tasa_salud, tasa_cesant, 
-                    movilizacion, total_bonos_no_imponibles
-                )
-                
-                if valores is None:
-                    print(f"Error en iteración {iteration}, sueldo_base: {sueldo_base}")
-                    # Reducir rango más agresivamente
-                    if iteration < 3:
-                        sueldo_max = sueldo_base * 0.9  # Reducir más el rango superior
-                        continue
-                    else:
-                        # Si falla muy seguido, usar estimación inicial
-                        print("Múltiples fallos, usando estimación inicial")
-                        mejor_sueldo_base = sueldo_base_inicial
-                        break
-                
-                diferencia = abs(valores['sueldo_liquido'] - sueldo_liquido_deseado)
-                
-                # Guardar mejor resultado
-                if diferencia < menor_diferencia:
-                    menor_diferencia = diferencia
-                    mejor_sueldo_base = sueldo_base
-                
-                # Convergencia temprana si está muy cerca
-                if diferencia <= precision:
-                    mejor_sueldo_base = sueldo_base
-                    break
-                
-                # Ajustar rango de búsqueda
-                if valores['sueldo_liquido'] < sueldo_liquido_deseado:
-                    sueldo_min = sueldo_base
-                else:
-                    sueldo_max = sueldo_base
-
-            # 3. Resultado final con el mejor sueldo encontrado
-            sueldo_base_final = round(mejor_sueldo_base)
-            valores_finales = self._calcular_valores_intermedios_seguro(
-                sueldo_base_final, tope_grat_mensual, total_bonos_imponibles, 
-                tope_imponible, tasa_afp, tasa_salud, tasa_cesant, 
-                movilizacion, total_bonos_no_imponibles
-            )
-            
-            if valores_finales is None:
-                raise ValueError("No se pudo calcular el resultado final")
-
-            return {
-                'deseado': sueldo_liquido_deseado,
-                'base': sueldo_base_final,
-                'grat': valores_finales['gratificacion'],
-                'imponible': valores_finales['imponible'],
-                'mov': movilizacion,
-                'afp': valores_finales['cotiz_prev'],
-                'salud': valores_finales['cotiz_salud'],
-                'cesant': valores_finales['cesant'],
-                'imp': valores_finales['impuesto2cat'],
-                'base_trib': valores_finales['base_tributable'],
-                'desc': valores_finales['total_descuentos'],
-                'hab': valores_finales['total_haberes'],
-                'liquido': valores_finales['sueldo_liquido'],
-                'bonos_imp': total_bonos_imponibles,
-                'bonos_noimp': total_bonos_no_imponibles,
-                'tope_imp': tope_imponible,
-                'diferencia': valores_finales['sueldo_liquido'] - sueldo_liquido_deseado,
-                'iteraciones': iteration + 1 if 'iteration' in locals() else 0
-            }
-            
-        except Exception as e:
-            print(f"Error en _calcular_sueldo_base_hibrido: {e}")
-            return None
 
     def _calcular_valores_intermedios_seguro(
             self, sueldo_base: float, tope_grat_mensual: float, 
@@ -1145,7 +1149,7 @@ class CalculadoraSueldos:
     def mostrar_resultados_popup(self, deseado: int, base: int, grat: float, imponible: float, 
                                 mov: int, afp: float, salud: float, cesant: float, imp: float, 
                                 base_trib: float, desc: float, hab: float, liquido: float, 
-                                bonos_imp: int, bonos_noimp: int, tope_imp: float,
+                                bonos_imp: int, bonos_noimp: int, tope_imp_afp_salud: float,
                                 diferencia: float = 0, iteraciones: int = 0, **kwargs):
         """Muestra los resultados en una ventana emergente con información adicional"""
         
@@ -1162,11 +1166,11 @@ class CalculadoraSueldos:
         self._configurar_ventana_resultados_mejorada(result_win, deseado, base, grat, imponible, 
                                                     mov, afp, salud, cesant, imp, base_trib, 
                                                     desc, hab, liquido, bonos_imp, bonos_noimp, 
-                                                    tope_imp, diferencia, iteraciones)
+                                                    tope_imp_afp_salud, diferencia, iteraciones)
 
     def _configurar_ventana_resultados_mejorada(self, win, deseado, base, grat, imponible, mov, afp, 
                                             salud, cesant, imp, base_trib, desc, hab, liquido, 
-                                            bonos_imp, bonos_noimp, tope_imp, diferencia, iteraciones):
+                                            bonos_imp, bonos_noimp, tope_imp_afp_salud, diferencia, iteraciones):
         """Configura la ventana de resultados mejorada"""
         # Título con color basado en precisión
         color_titulo = '#27ae60' if abs(diferencia) <= 1000 else '#e67e22' if abs(diferencia) <= 5000 else '#e74c3c'
@@ -1185,7 +1189,7 @@ class CalculadoraSueldos:
         # Generar texto de resultados
         resultado = self._generar_texto_resultados_mejorado(deseado, base, grat, imponible, mov, afp, 
                                                             salud, cesant, imp, base_trib, desc, hab, 
-                                                            liquido, bonos_imp, bonos_noimp, tope_imp, 
+                                                            liquido, bonos_imp, bonos_noimp, tope_imp_afp_salud, 
                                                             diferencia, iteraciones)
 
         # Text widget con scrollbar
@@ -1196,7 +1200,7 @@ class CalculadoraSueldos:
 
     def _generar_texto_resultados_mejorado(self, deseado, base, grat, imponible, mov, afp, salud, 
                                         cesant, imp, base_trib, desc, hab, liquido, bonos_imp, 
-                                        bonos_noimp, tope_imp, diferencia, iteraciones) -> str:
+                                        bonos_noimp, tope_imp_afp_salud, diferencia, iteraciones, **kwargs) -> str:
         """Genera el texto formateado de los resultados con información adicional"""
         def format_number(num):
             if abs(num - round(num)) < 0.01:
@@ -1214,6 +1218,19 @@ class CalculadoraSueldos:
             precision_text = "⚠️  ACEPTABLE"
         else:
             precision_text = "❌ REVISAR"
+
+        # Obtener información adicional de kwargs
+        descripcion_salud = kwargs.get('descripcion_salud', 'Salud')
+        tope_imp_cesantia = kwargs.get('tope_imp_cesantia', 0)
+        tope_afp_salud_alcanzado = kwargs.get('tope_afp_salud_alcanzado', False)
+        tope_cesantia_alcanzado = kwargs.get('tope_cesantia_alcanzado', False)
+
+        # Crear texto de alertas de topes
+        alertas_topes = ""
+        if tope_afp_salud_alcanzado:
+            alertas_topes += "⚠️  Se alcanzó el tope imponible AFP/Salud\n"
+        if tope_cesantia_alcanzado:
+            alertas_topes += "⚠️  Se alcanzó el tope imponible Seguro Cesantía\n"
 
         return f"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -1238,26 +1255,34 @@ Sueldo base necesario:       ${format_number(base)}
 └─ TOTAL HABERES:            ${format_number(hab):>15}
 
 📉 DETALLE DE DESCUENTOS
-├─ AFP ({self.get_tasa_afp()*100:.2f}%):              ${format_number(afp):>15}
-├─ Salud ({self.parametros['tasa_salud']*100:.2f}%):            ${format_number(salud):>15}
+├─ AFP ({self.parametros['tasa_afp']*100:.2f}%):                ${format_number(afp):>15}
+├─ {descripcion_salud}:      ${format_number(salud):>15}
 ├─ Cesantía ({self.parametros['tasa_cesant']*100:.2f}%):        ${format_number(cesant):>15}
-├─ Impuesto 2ª Cat.:         ${format_number(imp):>15}
-└─ TOTAL DESCUENTOS:         ${format_number(desc):>15}
+├─ Impuesto 2ª Cat.:                                            ${format_number(imp):>15}
+└─ TOTAL DESCUENTOS:                                            ${format_number(desc):>15}
 
 📋 INFORMACIÓN ADICIONAL
 ├─ Base tributable:          ${format_number(base_trib):>15}
 ├─ Tope gratificación:       ${format_number(self.parametros['factor_gratificacion'] * self.parametros['ingreso_minimo'] / 12):>15}
 ├─ Ingreso mínimo:           ${format_number(self.parametros['ingreso_minimo']):>15}
 ├─ Valor UF:                 ${format_number(self.parametros['valor_uf']):>15}
-├─ Tope imponible:           ${format_number(tope_imp):>15} ({self.parametros['tope_imponible_uf']} UF)
+├─ Tope AFP/Salud:           ${format_number(tope_imp_afp_salud):>15} ({self.parametros['tope_imponible_uf']} UF)
+├─ Tope Seguro Cesantía:     ${format_number(tope_imp_cesantia):>15} (131.8 UF)
 ├─ Bonos agregados:          {len(self.bonos):>15} bonos
 ├─ Tramos impuesto:          {len(self.tramos_impuesto):>15} tramos
 └─ Iteraciones cálculo:      {iteraciones:>15}
 
 ⚡ TASAS APLICADAS
-├─ AFP seleccionada:         {self.afp_var.get()}
-├─ Tasa total descuentos:    {(self.get_tasa_afp() + self.parametros['tasa_salud'] + self.parametros['tasa_cesant'])*100:.2f}%
+├─ AFP configurada:          {self.parametros['tasa_afp']*100:.2f}%
+├─ Sistema salud:            {descripcion_salud}
+├─ Tasa total descuentos:    {(self.parametros['tasa_afp'] + self.parametros['tasa_salud'] + self.parametros['tasa_cesant'])*100:.2f}%
 └─ Tasa impuesto efectiva:   {(imp/base_trib*100) if base_trib > 0 else 0:.2f}%
+
+{alertas_topes if alertas_topes else ""}--- INFORMACIÓN TÉCNICA ---
+Valor UF utilizado: ${self.parametros['valor_uf']:,.0f}
+Tope AFP/Salud: {self.parametros['tope_imponible_uf']} UF = ${tope_imp_afp_salud:,.0f}
+Tope Cesantía: 131.8 UF = ${tope_imp_cesantia:,.0f}
+{alertas_topes}
     """
 
     def _crear_text_widget_resultados(self, parent, resultado: str):
@@ -1266,6 +1291,32 @@ Sueldo base necesario:       ${format_number(base)}
         text_frame.pack(fill='both', expand=True)
 
         result_text = tk.Text(text_frame, font=('Courier', 10), bg='white', fg='#2c3e50', 
+                            wrap='word', relief='solid', borderwidth=1)
+        scrollbar = tk.Scrollbar(text_frame, orient='vertical', command=result_text.yview)
+        result_text.configure(yscrollcommand=scrollbar.set)
+
+        result_text.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+
+        result_text.insert(1.0, resultado)
+        result_text.config(state='disabled')  # Solo lectura
+
+    def _crear_botones_resultados(self, win, resultado: str):
+        """Crea los botones de la ventana de resultados"""
+        btn_frame = tk.Frame(win, bg='#f0f0f0')
+        btn_frame.pack(pady=15)
+
+        tk.Button(btn_frame, text="📋 Copiar al Portapapeles", 
+                command=lambda: self.copiar_resultados(resultado), 
+                bg='#3498db', fg='white', font=('Arial', 11, 'bold'), 
+                relief='flat', padx=20, pady=10).pack(side='left', padx=10)
+
+        tk.Button(btn_frame, text="🔄 Nuevo Cálculo", 
+                command=lambda: [win.destroy(), self.sueldo_liquido_var.set("")],
+                bg='#f39c12', fg='white', font=('Arial', 11, 'bold'),
+                relief='flat', padx=20, pady=10).pack(side='left', padx=10)
+
+        tk.Button(btn_frame, text="✅ Cerrar", command=win.destroy,
                             wrap='word', relief='solid', borderwidth=1)
         scrollbar = tk.Scrollbar(text_frame, orient='vertical', command=result_text.yview)
         result_text.configure(yscrollcommand=scrollbar.set)
@@ -1304,298 +1355,19 @@ Sueldo base necesario:       ${format_number(base)}
         except Exception as e:
             messagebox.showerror("Error", f"Error al copiar: {e}")
 
+    def actualizar_interface_afp(self):
+        """Actualiza la visualización de la tasa AFP en la interfaz"""
+        if hasattr(self, 'afp_label'):
+            self.afp_label.config(text=f"{self.parametros['tasa_afp']*100:.2f}%")
+        
+        # Actualizar también el texto de Fonasa si cambió la tasa de salud
+        if hasattr(self, 'fonasa_check'):
+            self.fonasa_check.config(text=f"Fonasa ({self.parametros['tasa_salud']*100:.1f}%)")
+        
+        # Actualizar valor en pesos de Isapre si cambió el valor UF
+        self._actualizar_valor_isapre_pesos()
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = CalculadoraSueldos(root)
     root.mainloop()
-    #     #-----------------------------------------------------------
-#     #                           Cálculo
-#     #-----------------------------------------------------------
-#     def get_tasa_afp(self) -> float:
-#         """Obtiene la tasa de AFP seleccionada"""
-#         afp_tasas = {
-#             'AFP Uno (10.49%)': 0.1049,
-#             'Cuprum (10.44%)': 0.1044,
-#             'Habitat (10.77%)': 0.1077,
-#             'Planvital (10.16%)': 0.1016,
-#             'ProVida (10.55%)': 0.1055,
-#             'Capital (11.44%)': 0.1144,
-#             'Modelo (10.58%)': 0.1058
-#         }
-#         return afp_tasas.get(self.afp_var.get(), self.parametros["tasa_afp"])
-
-#     def impuesto_unico(self, imponible: float) -> float:
-#         """Calcula impuesto único según tramos configurados"""
-#         for tramo in self.tramos_impuesto:
-#             if tramo['desde'] <= imponible <= tramo['hasta']:
-#                 impuesto = imponible * tramo['tasa'] - tramo['rebaja']
-#                 return max(impuesto, 0.0)
-#         return 0.0
-
-#     def calcular(self):
-#         """Función principal de cálculo"""
-#         try:
-#             # Validar entrada
-#             sueldo_str = self.sueldo_liquido_var.get().replace('.', '').replace(',', '')
-#             if not sueldo_str or not sueldo_str.isdigit():
-#                 messagebox.showerror("Error", "Por favor ingrese un sueldo líquido válido")
-#                 return
-                
-#             sueldo_liquido_deseado = int(sueldo_str)
-#             movilizacion_str = self.movilizacion_var.get().replace('.', '').replace(',', '')
-#             movilizacion = int(movilizacion_str) if movilizacion_str.isdigit() else 0
-            
-#             if sueldo_liquido_deseado <= 0:
-#                 messagebox.showerror("Error", "El sueldo debe ser mayor a 0")
-#                 return
-
-#             # Realizar cálculo
-#             resultado = self._calcular_sueldo_base(sueldo_liquido_deseado, movilizacion)
-            
-#             # Mostrar resultados
-#             self.mostrar_resultados_popup(**resultado)
-            
-#         except Exception as e:
-#             messagebox.showerror("Error", f"Error en el cálculo: {str(e)}")
-
-#     def _calcular_sueldo_base(self, sueldo_liquido_deseado: int, movilizacion: int) -> Dict[str, Any]:
-#         """Calcula el sueldo base necesario usando búsqueda binaria"""
-#         # Parámetros
-#         ingreso_minimo = self.parametros["ingreso_minimo"]
-#         tope_imponible = self.parametros["tope_imponible_uf"] * self.parametros["valor_uf"]
-#         tasa_afp = self.get_tasa_afp()
-#         tasa_salud = self.parametros["tasa_salud"]
-#         tasa_cesant = self.parametros["tasa_cesant"]
-#         tope_grat_mensual = self.parametros["factor_gratificacion"] * ingreso_minimo / 12
-#         precision = 100
-
-#         # Suma de bonos
-#         total_bonos_imponibles = sum(b["monto"] for b in self.bonos if b["imponible"])
-#         total_bonos_no_imponibles = sum(b["monto"] for b in self.bonos if not b["imponible"])
-
-#         # Búsqueda binaria
-#         sueldo_min = 0
-#         sueldo_max = sueldo_liquido_deseado * 3
-
-#         while sueldo_max - sueldo_min > precision:
-#             sueldo_base = (sueldo_min + sueldo_max) / 2
-            
-#             # Calcular valores intermedios
-#             valores = self._calcular_valores_intermedios(
-#                 sueldo_base, tope_grat_mensual, total_bonos_imponibles, 
-#                 tope_imponible, tasa_afp, tasa_salud, tasa_cesant, 
-#                 movilizacion, total_bonos_no_imponibles
-#             )
-            
-#             if valores['sueldo_liquido'] < sueldo_liquido_deseado:
-#                 sueldo_min = sueldo_base
-#             else:
-#                 sueldo_max = sueldo_base
-
-#         # Resultado final
-#         sueldo_base = round(sueldo_base)
-#         valores_finales = self._calcular_valores_intermedios(
-#             sueldo_base, tope_grat_mensual, total_bonos_imponibles, 
-#             tope_imponible, tasa_afp, tasa_salud, tasa_cesant, 
-#             movilizacion, total_bonos_no_imponibles
-#         )
-
-#         return {
-#             'deseado': sueldo_liquido_deseado,
-#             'base': sueldo_base,
-#             'grat': valores_finales['gratificacion'],
-#             'imponible': valores_finales['imponible'],
-#             'mov': movilizacion,
-#             'afp': valores_finales['cotiz_prev'],
-#             'salud': valores_finales['cotiz_salud'],
-#             'cesant': valores_finales['cesant'],
-#             'imp': valores_finales['impuesto2cat'],
-#             'base_trib': valores_finales['base_tributable'],
-#             'desc': valores_finales['total_descuentos'],
-#             'hab': valores_finales['total_haberes'],
-#             'liquido': valores_finales['sueldo_liquido'],
-#             'bonos_imp': total_bonos_imponibles,
-#             'bonos_noimp': total_bonos_no_imponibles,
-#             'tope_imp': tope_imponible
-#         }
-
-#     def _calcular_valores_intermedios(self, sueldo_base: float, tope_grat_mensual: float, 
-#                                     total_bonos_imponibles: int, tope_imponible: float,
-#                                     tasa_afp: float, tasa_salud: float, tasa_cesant: float,
-#                                     movilizacion: int, total_bonos_no_imponibles: int) -> Dict[str, float]:
-#         """Calcula todos los valores intermedios del cálculo"""
-#         # Gratificación legal
-#         gratificacion = min(self.parametros["porcentaje_gratificacion"] * sueldo_base, tope_grat_mensual)
-        
-#         # Total imponible
-#         imponible = sueldo_base + gratificacion + total_bonos_imponibles
-#         if imponible > tope_imponible:
-#             imponible = tope_imponible
-        
-#         # Descuentos
-#         cotiz_prev = imponible * tasa_afp
-#         cotiz_salud = imponible * tasa_salud
-#         cesant = imponible * tasa_cesant
-        
-#         # Base tributable
-#         base_tributable = imponible - (cotiz_prev + cotiz_salud + cesant)
-        
-#         # Impuesto
-#         impuesto2cat = self.impuesto_unico(base_tributable)
-        
-#         # Totales
-#         total_descuentos = cotiz_prev + cotiz_salud + cesant + impuesto2cat
-#         total_haberes = imponible + movilizacion + total_bonos_no_imponibles
-#         sueldo_liquido = total_haberes - total_descuentos
-        
-#         return {
-#             'gratificacion': gratificacion,
-#             'imponible': imponible,
-#             'cotiz_prev': cotiz_prev,
-#             'cotiz_salud': cotiz_salud,
-#             'cesant': cesant,
-#             'base_tributable': base_tributable,
-#             'impuesto2cat': impuesto2cat,
-#             'total_descuentos': total_descuentos,
-#             'total_haberes': total_haberes,
-#             'sueldo_liquido': sueldo_liquido
-#         }
-
-#     def mostrar_resultados_popup(self, deseado: int, base: int, grat: float, imponible: float, 
-#                                 mov: int, afp: float, salud: float, cesant: float, imp: float, 
-#                                 base_trib: float, desc: float, hab: float, liquido: float, 
-#                                 bonos_imp: int, bonos_noimp: int, tope_imp: float):
-#         """Muestra los resultados en una ventana emergente"""
-        
-#         # Crear ventana de resultados
-#         result_win = tk.Toplevel(self.root)
-#         result_win.title("📊 Resultados del Cálculo")
-#         result_win.geometry("950x750+100+50")
-#         result_win.configure(bg='#f0f0f0')
-#         result_win.grab_set()
-
-#         self._configurar_ventana_resultados(result_win, deseado, base, grat, imponible, 
-#                                           mov, afp, salud, cesant, imp, base_trib, 
-#                                           desc, hab, liquido, bonos_imp, bonos_noimp, tope_imp)
-
-#     def _configurar_ventana_resultados(self, win, deseado, base, grat, imponible, mov, afp, 
-#                                      salud, cesant, imp, base_trib, desc, hab, liquido, 
-#                                      bonos_imp, bonos_noimp, tope_imp):
-#         """Configura la ventana de resultados"""
-#         # Título
-#         title_frame = tk.Frame(win, bg='#27ae60', height=60)
-#         title_frame.pack(fill='x', padx=0, pady=0)
-#         title_frame.pack_propagate(False)
-        
-#         tk.Label(title_frame, text="📊 RESULTADOS DEL CÁLCULO DE SUELDO", 
-#                 font=('Arial', 16, 'bold'), fg='white', bg='#27ae60').pack(expand=True)
-
-#         # Frame principal para resultados
-#         main_frame = tk.Frame(win, bg='#f0f0f0')
-#         main_frame.pack(fill='both', expand=True, padx=20, pady=20)
-
-#         # Generar texto de resultados
-#         resultado = self._generar_texto_resultados(deseado, base, grat, imponible, mov, afp, 
-#                                                  salud, cesant, imp, base_trib, desc, hab, 
-#                                                  liquido, bonos_imp, bonos_noimp, tope_imp)
-
-#         # Text widget con scrollbar
-#         self._crear_text_widget_resultados(main_frame, resultado)
-        
-#         # Botones
-#         self._crear_botones_resultados(win, resultado)
-
-#     def _generar_texto_resultados(self, deseado, base, grat, imponible, mov, afp, salud, 
-#                                 cesant, imp, base_trib, desc, hab, liquido, bonos_imp, 
-#                                 bonos_noimp, tope_imp) -> str:
-#         """Genera el texto formateado de los resultados"""
-#         def format_number(num):
-#             if abs(num - round(num)) < 0.01:
-#                 return f"{num:,.0f}".replace(',', '.')
-#             else:
-#                 return f"{num:,.2f}".replace(',', '.') 
-
-#         return f"""
-# ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                           CÁLCULO DE SUELDO BASE                             ║
-# ╚══════════════════════════════════════════════════════════════════════════════╝
-
-# 🎯 OBJETIVO
-#    Sueldo líquido deseado: ${format_number(deseado)}
-
-# 💰 RESULTADO PRINCIPAL
-#    Sueldo base necesario: ${format_number(base)}
-
-# 📊 DETALLE DE HABERES
-#    ├─ Sueldo base:              ${format_number(base):>15}
-#    ├─ Gratificación legal:      ${format_number(grat):>15}
-#    ├─ Bonos imponibles:         ${format_number(bonos_imp):>15}
-#    ├─ Total Imponible:          ${format_number(imponible):>15}
-#    ├─ Haberes no imponibles:    ${format_number(mov):>15}
-#    ├─ Bonos no imponibles:      ${format_number(bonos_noimp):>15}
-#    └─ TOTAL HABERES:            ${format_number(hab):>15}
-
-# 📉 DETALLE DE DESCUENTOS
-#    ├─ AFP ({self.get_tasa_afp()*100:.2f}%):              ${format_number(afp):>15}
-#    ├─ Salud ({self.parametros['tasa_salud']*100:.2f}%):            ${format_number(salud):>15}
-#    ├─ Cesantía ({self.parametros['tasa_cesant']*100:.2f}%):        ${format_number(cesant):>15}
-#    ├─ Impuesto 2ª Cat.:         ${format_number(imp):>15}
-#    └─ TOTAL DESCUENTOS:         ${format_number(desc):>15}
-
-# 💵 RESULTADO FINAL
-#    Sueldo líquido calculado:    ${format_number(liquido):>15}
-#    Diferencia con deseado:      ${format_number(liquido - deseado):>15}
-
-# 📋 INFORMACIÓN ADICIONAL
-#    ├─ Base tributable:          ${format_number(base_trib):>15}
-#    ├─ Tope gratificación:       ${format_number(self.parametros['factor_gratificacion'] * self.parametros['ingreso_minimo'] / 12):>15}
-#    ├─ Ingreso mínimo:           ${format_number(self.parametros['ingreso_minimo']):>15}
-#    ├─ Valor UF:                 ${format_number(self.parametros['valor_uf']):>15}
-#    ├─ Tope imponible:           ${format_number(tope_imp):>15} ({self.parametros['tope_imponible_uf']} UF)
-#    ├─ Bonos agregados:          {len(self.bonos):>15} bonos
-#    └─ Tramos impuesto:          {len(self.tramos_impuesto):>15} tramos
-# """
-
-#     def _crear_text_widget_resultados(self, parent, resultado: str):
-#         """Crea el widget de texto para mostrar resultados"""
-#         text_frame = tk.Frame(parent)
-#         text_frame.pack(fill='both', expand=True)
-
-#         result_text = tk.Text(text_frame, font=('Courier', 10), bg='white', fg='#2c3e50', 
-#                              wrap='word', relief='solid', borderwidth=1)
-#         scrollbar = tk.Scrollbar(text_frame, orient='vertical', command=result_text.yview)
-#         result_text.configure(yscrollcommand=scrollbar.set)
-
-#         result_text.pack(side='left', fill='both', expand=True)
-#         scrollbar.pack(side='right', fill='y')
-
-#         result_text.insert(1.0, resultado)
-#         result_text.config(state='disabled')  # Solo lectura
-
-#     def _crear_botones_resultados(self, win, resultado: str):
-#         """Crea los botones de la ventana de resultados"""
-#         btn_frame = tk.Frame(win, bg='#f0f0f0')
-#         btn_frame.pack(pady=15)
-
-#         tk.Button(btn_frame, text="📋 Copiar al Portapapeles", 
-#                  command=lambda: self.copiar_resultados(resultado), 
-#                  bg='#3498db', fg='white', font=('Arial', 11, 'bold'), 
-#                  relief='flat', padx=20, pady=10).pack(side='left', padx=10)
-
-#         tk.Button(btn_frame, text="✅ Cerrar", command=win.destroy,
-#                  bg='#95a5a6', fg='white', font=('Arial', 11, 'bold'),
-#                  relief='flat', padx=20, pady=10).pack(side='left', padx=10)
-
-#     def copiar_resultados(self, resultado: str):
-#         """Copia los resultados al portapapeles"""
-#         try:
-#             self.root.clipboard_clear()
-#             self.root.clipboard_append(resultado)
-#             messagebox.showinfo("Copiado", "¡Resultados copiados al portapapeles!")
-#         except Exception as e:
-#             messagebox.showerror("Error", f"Error al copiar: {e}")
-
-# if __name__ == "__main__":
-#     root = tk.Tk()
-#     app = CalculadoraSueldos(root)
-#     root.mainloop()
