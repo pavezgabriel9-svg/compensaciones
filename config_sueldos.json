@@ -54,7 +54,7 @@
     },
     {
       "desde": 21280570.01,
-      "hasta": Infinity,
+      "hasta": "Infinity",
       "tasa": 0.4,
       "rebaja": 2664876.54
     }
