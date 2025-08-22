@@ -1317,32 +1317,6 @@ Tope Cesantía: 131.8 UF = ${tope_imp_cesantia:,.0f}
                 relief='flat', padx=20, pady=10).pack(side='left', padx=10)
 
         tk.Button(btn_frame, text="✅ Cerrar", command=win.destroy,
-                            wrap='word', relief='solid', borderwidth=1)
-        scrollbar = tk.Scrollbar(text_frame, orient='vertical', command=result_text.yview)
-        result_text.configure(yscrollcommand=scrollbar.set)
-
-        result_text.pack(side='left', fill='both', expand=True)
-        scrollbar.pack(side='right', fill='y')
-
-        result_text.insert(1.0, resultado)
-        result_text.config(state='disabled')  # Solo lectura
-
-    def _crear_botones_resultados(self, win, resultado: str):
-        """Crea los botones de la ventana de resultados"""
-        btn_frame = tk.Frame(win, bg='#f0f0f0')
-        btn_frame.pack(pady=15)
-
-        tk.Button(btn_frame, text="📋 Copiar al Portapapeles", 
-                command=lambda: self.copiar_resultados(resultado), 
-                bg='#3498db', fg='white', font=('Arial', 11, 'bold'), 
-                relief='flat', padx=20, pady=10).pack(side='left', padx=10)
-
-        tk.Button(btn_frame, text="🔄 Nuevo Cálculo", 
-                command=lambda: [win.destroy(), self.sueldo_liquido_var.set("")],
-                bg='#f39c12', fg='white', font=('Arial', 11, 'bold'),
-                relief='flat', padx=20, pady=10).pack(side='left', padx=10)
-
-        tk.Button(btn_frame, text="✅ Cerrar", command=win.destroy,
                 bg='#95a5a6', fg='white', font=('Arial', 11, 'bold'),
                 relief='flat', padx=20, pady=10).pack(side='left', padx=10)
 
