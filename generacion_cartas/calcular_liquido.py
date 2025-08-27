@@ -151,8 +151,8 @@ def calcular_liquido_desde_base(sueldo_base, tipo_salud="fonasa", valor_isapre_u
 if __name__ == "__main__":
     # Ejemplo con Fonasa
     #print("EJEMPLO CON FONASA:")
-    calcular_liquido_desde_base(550_000, "fonasa")
-    
+    calcular_liquido_desde_base(1_300_000, "fonasa")
+
     # Ejemplo con Isapre
     # print("EJEMPLO CON ISAPRE:")
     # calcular_liquido_desde_base(1_200_000, "isapre", 3.5)

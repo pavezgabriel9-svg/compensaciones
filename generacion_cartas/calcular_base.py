@@ -165,7 +165,7 @@ def calcular_sueldo_base(sueldo_liquido_deseado, precision=100, tipo_salud="isap
     print(f"\n\n")
     return sueldo_base
 
-calcular_sueldo_base(603_000, tipo_salud="fonasa")
+calcular_sueldo_base(1_000_000, tipo_salud="fonasa")
 
 
 
