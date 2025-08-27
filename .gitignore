@@ -1,2 +1,2 @@
 generacion_cartas/cartas_generadas/
-venv/
+*.env
