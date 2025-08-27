@@ -51,7 +51,7 @@ def calcular_sueldo_base(sueldo_liquido_deseado, precision=100, tipo_salud="isap
         cotizacion_salud_fija = None  # Se calcula como porcentaje
 
     # Movilización
-    movilizacion = 40_000  # Haber no imponible, fijo Cramer
+    movilizacion = 375_000  # Haber no imponible, fijo Cramer
     
     # Conversión tope imponible (UF) a pesos
     tope_imponible_pesos_afp_salud = max_imponible_afp_salud * uf
@@ -165,7 +165,7 @@ def calcular_sueldo_base(sueldo_liquido_deseado, precision=100, tipo_salud="isap
     print(f"\n\n")
     return sueldo_base
 
-calcular_sueldo_base(1_000_000, tipo_salud="fonasa")
+calcular_sueldo_base(1_200_000, tipo_salud="fonasa")
 
 
 

@@ -46,7 +46,7 @@ def calcular_liquido_desde_base(sueldo_base, tipo_salud="fonasa", valor_isapre_u
         print(f"Un sueldo base típico está en cientos de miles o millones de pesos.")
     
     # Movilización
-    movilizacion = 40_000  # Haber no imponible
+    movilizacion = 375_000  # Haber no imponible
     
     # Seleccionar tipo de salud
     if tipo_salud.lower() == "isapre":
@@ -151,7 +151,7 @@ def calcular_liquido_desde_base(sueldo_base, tipo_salud="fonasa", valor_isapre_u
 if __name__ == "__main__":
     # Ejemplo con Fonasa
     #print("EJEMPLO CON FONASA:")
-    calcular_liquido_desde_base(1_300_000, "fonasa")
+    calcular_liquido_desde_base(1_200_000, "fonasa")
 
     # Ejemplo con Isapre
     # print("EJEMPLO CON ISAPRE:")

@@ -311,7 +311,7 @@ def calcular_valores_automaticos(sueldo_base, tipo_movilizacion="Normal"):
         
         # Parámetros fijos
         ingreso_minimo = 529_000
-        uf = 39_383
+        uf = 39_338
         tasa_afp = 0.1049
         tasa_fonasa = 0.07
         tasa_cesantia = 0.006
