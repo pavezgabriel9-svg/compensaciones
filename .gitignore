@@ -1,2 +1,3 @@
 generacion_cartas/cartas_generadas/
 *.env
+/entorno_compensaciones/
