@@ -9,25 +9,25 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 #envio de correos por outlook
-#import win32com.client as win32
-#import pythoncom envio de 
+import win32com.client as win32
+import pythoncom
 
 #-----------------------------------------------------------
 #                    Conexión BD
 #-----------------------------------------------------------
 # Entorno macOS
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "cancionanimal"
-DB_NAME = "prueba_buk"
+# DB_HOST = "localhost"
+# DB_USER = "root"
+# DB_PASSWORD = "cancionanimal"
+# DB_NAME = "prueba_buk"
 
 # Entorno Windows
-# DB_HOST = "10.254.33.138"
-# DB_USER = "compensaciones_rrhh"
-# DB_PASSWORD = "_Cramercomp2025_"
-# DB_NAME = "rrhh_app"
+DB_HOST = "10.254.33.138"
+DB_USER = "compensaciones_rrhh"
+DB_PASSWORD = "_Cramercomp2025_"
+DB_NAME = "rrhh_app"
 
-# MAIL_TEST = "gpavez@cramer.cl"  
+MAIL_TEST = "gpavez@cramer.cl"  
 
 #-----------------------------------------------------------
 #             Dashboard de Alertas de Contratos
@@ -45,7 +45,7 @@ class DashboardAlertas:
 
     def _configurar_ventana_principal(self):
         """Configura la ventana principal"""
-        self.root.title("Alertas de Contratos")
+        self.root.title("📊 Dashboard de Alertas de Contratos")
         self.root.minsize(1200, 700)
         self.root.geometry("1300x800+50+50")
         self.root.configure(bg='#f0f0f0')
@@ -120,7 +120,7 @@ class DashboardAlertas:
         title_frame.pack(fill='x')
         title_frame.pack_propagate(False)
         
-        title_label = tk.Label(title_frame, text="Alertas de Contratos", 
+        title_label = tk.Label(title_frame, text="📊 Dashboard de Alertas de Contratos", 
                               font=('Arial', 16, 'bold'), fg='white', bg='#e74c3c')
         title_label.pack(expand=True, pady=15)
 
@@ -173,7 +173,7 @@ class DashboardAlertas:
         
         self.filtro_var = tk.StringVar(value="Todos")
         filtro_combo = ttk.Combobox(filtros_frame, textvariable=self.filtro_var, 
-                                   values=["Todos", "VENCIDA", "URGENTE","FUTURA", "SEGUNDO_PLAZO", "INDEFINIDO"],
+                                   values=["Todos", "Urgentes", "Requieren Acción", "SEGUNDO_PLAZO", "INDEFINIDO"],
                                    state="readonly", width=15)
         filtro_combo.pack(side='left', padx=5)
         filtro_combo.bind('<<ComboboxSelected>>', self.aplicar_filtro)
@@ -192,19 +192,16 @@ class DashboardAlertas:
         tree_frame.pack(fill='both', expand=True)
 
         # Columnas
-        columns = ('Empleado', 'Cargo', 'Jefe', 'Fecha Alerta', 
+        columns = ('Empleado', 'RUT', 'Cargo', 'Área', 'Jefe', 'Fecha Alerta', 
                   'Motivo', 'Días hasta alerta', 'Estado')
-                    #'Área', 'RUT', 
         
         self.alertas_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15)
         
-        anchos = [150, 100, 120, 60, 120, 50, 50]
+        # Configurar columnas
+        anchos = [150, 100, 120, 100, 120, 100, 200, 80, 80]
         for i, col in enumerate(columns):
             self.alertas_tree.heading(col, text=col)
-            if col in ['Fecha Alerta', 'Días hasta alerta', 'Estado']:
-                self.alertas_tree.column(col, width=anchos[i], anchor='center')
-            else:
-                self.alertas_tree.column(col, width=anchos[i], anchor='w')
+            self.alertas_tree.column(col, width=anchos[i], anchor='w' if i < 6 else 'center')
 
         # Scrollbars
         scrollbar_v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.alertas_tree.yview)
@@ -279,27 +276,27 @@ class DashboardAlertas:
             # Determinar estado visual
             dias_hasta = row["Días hasta alerta"]
             if dias_hasta <= 0:
-                estado = "VENCIDA"
+                estado = "🔴 VENCIDA"
             elif row["Urgente"] == 1:
-                estado = "URGENTE"
+                estado = "🟠 URGENTE"
             elif row["Requiere Acción"] == 1:
-                estado = "ACCIÓN"
+                estado = "🟡 ACCIÓN"
             else:
-                estado = "FUTURA"
+                estado = "🟢 FUTURA"
 
             valores = (
-                row["Empleado"], row["Cargo"],
+                row["Empleado"], row["RUT"], row["Cargo"], row["Área"], 
                 row["Jefe"], row["Fecha alerta"], row["Motivo"], 
                 str(dias_hasta), estado
-            ) # row["Área"], row["RUT"], 
+            )
             
             item = self.alertas_tree.insert('', 'end', values=valores)
             
             # Colorear filas según urgencia
             if dias_hasta <= 0:
-                self.alertas_tree.set(item, 'Estado', 'VENCIDA')
+                self.alertas_tree.set(item, 'Estado', '🔴 VENCIDA')
             elif row["Urgente"] == 1:
-                self.alertas_tree.set(item, 'Estado', 'URGENTE')
+                self.alertas_tree.set(item, 'Estado', '🟠 URGENTE')
 
     def aplicar_filtro_actual(self):
         """Aplica el filtro seleccionado"""
@@ -310,12 +307,10 @@ class DashboardAlertas:
         
         if filtro == "Todos":
             return self.alertas_df
-        elif filtro == "VENCIDA":
-            return self.alertas_df[self.alertas_df["VENCIDA"] == 1]
-        elif filtro == "URGENTE":
-            return self.alertas_df[self.alertas_df["URGENTE"] == 1]
-        elif filtro == "FUTURA":
-            return self.alertas_df[self.alertas_df["FUTURA"] == 1]
+        elif filtro == "Urgentes":
+            return self.alertas_df[self.alertas_df["Urgente"] == 1]
+        elif filtro == "Requieren Acción":
+            return self.alertas_df[self.alertas_df["Requiere Acción"] == 1]
         elif filtro in ["SEGUNDO_PLAZO", "INDEFINIDO"]:
             return self.alertas_df[self.alertas_df["Tipo Alerta"] == filtro]
         else:

@@ -13,3 +13,6 @@ git commit -m "Descripción de lo que hiciste"
 
 # Subir los cambios 
 git push
+
+#cambios de niveles 
+cd ../..

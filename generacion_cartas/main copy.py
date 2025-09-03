@@ -295,7 +295,7 @@ def seleccionar_plantilla(row_dict):
     print(f"⚠️ No se encontró plantilla específica para los criterios. Usando plantilla por defecto.")
     return TEMPLATE_DEFAULT
 
-# Función para calcular valores automáticamente desde sueldo base
+# Función para calcular sueldo base
 def calcular_valores_automaticos(sueldo_base, tipo_movilizacion="Normal"):
     """
     Calcula gratificación, movilización, total_haberes y líquido_aproximado
@@ -321,7 +321,7 @@ def calcular_valores_automaticos(sueldo_base, tipo_movilizacion="Normal"):
             movilizacion_kam = 125_000  # Solo movilización KAM
             asignacion_desgaste = 250_000  # Asignación de desgaste separada
             movilizacion_total = movilizacion_kam + asignacion_desgaste  # Para cálculos internos
-        else:  # "Normal" u otros casos
+        else:  
             movilizacion_kam = 40_000  # Movilización normal
             asignacion_desgaste = 0  # Sin asignación de desgaste
             movilizacion_total = movilizacion_kam
