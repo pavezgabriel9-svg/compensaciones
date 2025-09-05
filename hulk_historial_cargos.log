@@ -1,0 +1,111 @@
+2025-09-04 09:31:56,578 - INFO - 🚀 HULK iniciando extracción de datos históricos + historial de cargos
+2025-09-04 09:31:56,579 - INFO - 📅 Procesando 36 períodos desde 2023 hasta 2025
+2025-09-04 09:31:56,579 - INFO - 🔄 Procesando período 2023-01 (1/36)
+2025-09-04 09:31:56,653 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-01&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000014FEA77C590>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:31:57,659 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-01&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000014FEA784A50>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:31:58,667 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-01&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000014FEA785450>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:31:58,667 - WARNING - ⚠️ No se pudieron obtener liquidaciones para 2023-01
+2025-09-04 09:31:59,316 - ERROR - ❌ Error guardando checkpoint: (pymysql.err.ProgrammingError) (1146, "Table 'rrhh_app.total_liquidaciones' doesn't exist")
+[SQL: SELECT COUNT(*) FROM total_liquidaciones]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-09-04 09:31:59,316 - INFO - 🔄 Procesando período 2023-02 (2/36)
+2025-09-04 09:31:59,331 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-02&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000014FEAC2E0D0>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:32:00,336 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-02&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000014FEAC2E5D0>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:32:01,343 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-02&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000014FEAC2E990>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:32:01,344 - WARNING - ⚠️ No se pudieron obtener liquidaciones para 2023-02
+2025-09-04 09:32:01,418 - ERROR - ❌ Error guardando checkpoint: (pymysql.err.ProgrammingError) (1146, "Table 'rrhh_app.total_liquidaciones' doesn't exist")
+[SQL: SELECT COUNT(*) FROM total_liquidaciones]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-09-04 09:32:01,419 - INFO - 🔄 Procesando período 2023-03 (3/36)
+2025-09-04 09:32:01,424 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-03&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000014FEAC2E350>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:32:08,892 - INFO - 🚀 HULK iniciando extracción de datos históricos + historial de cargos
+2025-09-04 09:32:08,893 - INFO - 📅 Procesando 36 períodos desde 2023 hasta 2025
+2025-09-04 09:32:08,893 - INFO - 🔄 Procesando período 2023-01 (1/36)
+2025-09-04 09:32:08,911 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-01&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x000001E166EBC590>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:32:09,916 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-01&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x000001E166EC4A50>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:32:10,922 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-01&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x000001E166EC5450>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:32:10,922 - WARNING - ⚠️ No se pudieron obtener liquidaciones para 2023-01
+2025-09-04 09:32:11,178 - ERROR - ❌ Error guardando checkpoint: (pymysql.err.ProgrammingError) (1146, "Table 'rrhh_app.total_liquidaciones' doesn't exist")
+[SQL: SELECT COUNT(*) FROM total_liquidaciones]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-09-04 09:32:11,178 - INFO - 🔄 Procesando período 2023-02 (2/36)
+2025-09-04 09:32:11,187 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-02&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x000001E16736E0D0>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:32:12,194 - ERROR - ❌ Error de conexión: HTTPSConnectionPool(host='api.buk.cl', port=443): Max retries exceeded with url: /api/v1/chile/employees/settlements?period=2023-02&page_size=100 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x000001E16736E5D0>: Failed to resolve 'api.buk.cl' ([Errno 11001] getaddrinfo failed)"))
+2025-09-04 09:48:10,883 - INFO - 🚀 HULK iniciando extracción de datos históricos + historial de cargos
+2025-09-04 09:48:10,883 - INFO - 📅 Procesando 36 períodos desde 2023 hasta 2025
+2025-09-04 09:48:10,883 - INFO - 🔄 Procesando período 2023-01 (1/36)
+2025-09-04 09:48:12,233 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:48:14,387 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:48:16,552 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:48:16,554 - WARNING - ⚠️ No se pudieron obtener liquidaciones para 2023-01
+2025-09-04 09:48:16,769 - ERROR - ❌ Error guardando checkpoint: (pymysql.err.ProgrammingError) (1146, "Table 'rrhh_app.total_liquidaciones' doesn't exist")
+[SQL: SELECT COUNT(*) FROM total_liquidaciones]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-09-04 09:48:16,769 - INFO - 🔄 Procesando período 2023-02 (2/36)
+2025-09-04 09:48:18,001 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:48:20,130 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:48:22,256 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:48:22,259 - WARNING - ⚠️ No se pudieron obtener liquidaciones para 2023-02
+2025-09-04 09:48:22,356 - ERROR - ❌ Error guardando checkpoint: (pymysql.err.ProgrammingError) (1146, "Table 'rrhh_app.total_liquidaciones' doesn't exist")
+[SQL: SELECT COUNT(*) FROM total_liquidaciones]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-09-04 09:48:22,357 - INFO - 🔄 Procesando período 2023-03 (3/36)
+2025-09-04 09:53:30,112 - INFO - 🚀 HULK iniciando extracción de datos históricos + historial de cargos
+2025-09-04 09:53:30,112 - INFO - 📅 Procesando 36 períodos desde 2023 hasta 2025
+2025-09-04 09:53:30,112 - INFO - 🔄 Procesando período 2023-01 (1/36)
+2025-09-04 09:53:31,440 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:53:33,667 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:53:35,803 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:53:35,805 - WARNING - ⚠️ No se pudieron obtener liquidaciones para 2023-01
+2025-09-04 09:53:36,050 - INFO - 📊 Checkpoint - Período 2023-01: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 09:53:36,063 - INFO - 🔄 Procesando período 2023-02 (2/36)
+2025-09-04 09:53:37,181 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:53:39,315 - ERROR - ❌ Error API 401: "no_authorize"
+2025-09-04 09:56:54,798 - INFO - 🚀 HULK iniciando extracción de datos históricos + historial de cargos
+2025-09-04 09:56:54,799 - INFO - 📅 Procesando 36 períodos desde 2023 hasta 2025
+2025-09-04 09:56:54,799 - INFO - 🔄 Procesando período 2023-01 (1/36)
+2025-09-04 09:56:59,278 - ERROR - ❌ Error procesando período 2023-01: 0
+2025-09-04 09:56:59,586 - INFO - 📊 Checkpoint - Período 2023-01: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 09:56:59,593 - INFO - 🔄 Procesando período 2023-02 (2/36)
+2025-09-04 09:57:02,810 - ERROR - ❌ Error procesando período 2023-02: 0
+2025-09-04 09:57:02,917 - INFO - 📊 Checkpoint - Período 2023-02: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 09:57:02,924 - INFO - 🔄 Procesando período 2023-03 (3/36)
+2025-09-04 09:57:06,493 - ERROR - ❌ Error procesando período 2023-03: 0
+2025-09-04 09:57:06,648 - INFO - 📊 Checkpoint - Período 2023-03: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 09:57:06,653 - INFO - 🔄 Procesando período 2023-04 (4/36)
+2025-09-04 09:57:09,667 - ERROR - ❌ Error procesando período 2023-04: 0
+2025-09-04 09:57:09,817 - INFO - 📊 Checkpoint - Período 2023-04: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 09:57:09,840 - INFO - 🔄 Procesando período 2023-05 (5/36)
+2025-09-04 09:58:55,884 - INFO - 🚀 HULK iniciando extracción de datos históricos + historial de cargos
+2025-09-04 09:58:55,885 - INFO - 📅 Procesando 36 períodos desde 2023 hasta 2025
+2025-09-04 09:58:55,885 - INFO - 🔄 Procesando período 2023-01 (1/36)
+2025-09-04 09:58:59,167 - ERROR - ❌ Error procesando período 2023-01: 0
+2025-09-04 09:58:59,404 - INFO - 📊 Checkpoint - Período 2023-01: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 09:58:59,411 - INFO - 🔄 Procesando período 2023-02 (2/36)
+2025-09-04 09:59:03,972 - ERROR - ❌ Error procesando período 2023-02: 0
+2025-09-04 09:59:04,050 - INFO - 📊 Checkpoint - Período 2023-02: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 09:59:04,056 - INFO - 🔄 Procesando período 2023-03 (3/36)
+2025-09-04 09:59:07,321 - ERROR - ❌ Error procesando período 2023-03: 0
+2025-09-04 09:59:07,513 - INFO - 📊 Checkpoint - Período 2023-03: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 09:59:07,563 - INFO - 🔄 Procesando período 2023-04 (4/36)
+2025-09-04 10:02:35,630 - INFO - 🚀 HULK iniciando extracción de datos históricos + historial de cargos
+2025-09-04 10:02:35,630 - INFO - 📅 Procesando 36 períodos desde 2023 hasta 2025
+2025-09-04 10:02:35,631 - INFO - 🔄 Procesando período 2023-01 (1/36)
+2025-09-04 10:02:42,856 - ERROR - ❌ Error procesando período 2023-01: 0
+2025-09-04 10:02:43,453 - INFO - 📊 Checkpoint - Período 2023-01: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 10:02:43,458 - INFO - 🔄 Procesando período 2023-02 (2/36)
+2025-09-04 10:02:50,999 - ERROR - ❌ Error procesando período 2023-02: 0
+2025-09-04 10:02:51,099 - INFO - 📊 Checkpoint - Período 2023-02: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 10:02:51,105 - INFO - 🔄 Procesando período 2023-03 (3/36)
+2025-09-04 10:05:06,777 - INFO - 🚀 HULK iniciando extracción de datos históricos + historial de cargos
+2025-09-04 10:05:06,778 - INFO - 📅 Procesando 36 períodos desde 2023 hasta 2025
+2025-09-04 10:05:06,779 - INFO - 🔄 Procesando período 2023-01 (1/36)
+2025-09-04 10:05:10,931 - ERROR - ❌ Error procesando período 2023-01: 0
+2025-09-04 10:05:11,113 - INFO - 📊 Checkpoint - Período 2023-01: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 10:05:11,122 - INFO - 🔄 Procesando período 2023-02 (2/36)
+2025-09-04 10:05:15,530 - ERROR - ❌ Error procesando período 2023-02: 0
+2025-09-04 10:05:15,610 - INFO - 📊 Checkpoint - Período 2023-02: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 10:05:15,614 - INFO - 🔄 Procesando período 2023-03 (3/36)
+2025-09-04 10:05:19,500 - ERROR - ❌ Error procesando período 2023-03: 0
+2025-09-04 10:05:19,583 - INFO - 📊 Checkpoint - Período 2023-03: 0 registros | Total liquidaciones: 0 | Total historial cargos: 0
+2025-09-04 10:05:19,589 - INFO - 🔄 Procesando período 2023-04 (4/36)

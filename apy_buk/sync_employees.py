@@ -333,10 +333,10 @@ def job_sincronizar_empleados():
 
 # %%
 # PROGRAMACIÓN AUTOMÁTICA
-schedule.every().day.at("09:40").do(job_sincronizar_empleados)
+schedule.every().day.at("16:03").do(job_sincronizar_empleados)
 
-print("📅 SCHEDULER ACTIVO - Se ejecutará todos los días a las 09:40 AM")
-print("👉 Para testing: cambia '09:40' por la hora actual +1 minuto")
+print("📅 SCHEDULER ACTIVO - Se ejecutará todos los días a las 16:03")
+print("👉 Para testing: cambia '16:03' por la hora actual +1 minuto")
 print("🛑 Presiona Ctrl+C para detener el scheduler")
 print("⏰ Próxima ejecución programada:", schedule.next_run())
 
