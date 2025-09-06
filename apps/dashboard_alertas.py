@@ -8,24 +8,27 @@ import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-#envio de correos por outlook
-import win32com.client as win32
-import pythoncom
+#entorno mac
+import cryptography
+
+#envio de correos por outlook, entorno windows
+# import win32com.client as win32
+# import pythoncom
 
 #-----------------------------------------------------------
 #                    Conexión BD
 #-----------------------------------------------------------
 # Entorno macOS
-# DB_HOST = "localhost"
-# DB_USER = "root"
-# DB_PASSWORD = "cancionanimal"
-# DB_NAME = "prueba_buk"
+DB_HOST = "localhost"
+DB_USER = "root"
+DB_PASSWORD = "cancionanimal"
+DB_NAME = "prueba_buk"
 
 # Entorno Windows
-DB_HOST = "10.254.33.138"
-DB_USER = "compensaciones_rrhh"
-DB_PASSWORD = "_Cramercomp2025_"
-DB_NAME = "rrhh_app"
+# DB_HOST = "10.254.33.138"
+# DB_USER = "compensaciones_rrhh"
+# DB_PASSWORD = "_Cramercomp2025_"
+# DB_NAME = "rrhh_app"
 
 MAIL_TEST = "gpavez@cramer.cl"  
 
@@ -65,7 +68,7 @@ class DashboardAlertas:
             return None
 
     def obtener_alertas(self):
-        """Obtiene las alertas desde la base de datos"""
+        """Obtiene los datos desde la base de datos"""
         conexion = self.conectar_bd()
         if not conexion:
             return pd.DataFrame()
@@ -77,7 +80,7 @@ class DashboardAlertas:
                 id, employee_name, employee_rut, employee_role,
                 employee_area_name, boss_name, boss_email,
                 alert_date, alert_reason,
-                days_since_start,
+                days_since_start,employee_start_date
                 DATEDIFF(alert_date, CURDATE()) as dias_hasta_alerta,
                 is_urgent, requires_action, alert_type
             FROM contract_alerts 
@@ -89,7 +92,7 @@ class DashboardAlertas:
 
             cols = ["ID", "Empleado", "RUT", "Cargo", "Área", "Jefe", "Email Jefe",
                     "Fecha alerta", "Motivo", "Días desde inicio",
-                    "Días hasta alerta", "Urgente", "Requiere Acción", "Tipo Alerta"]
+                    "Días hasta alerta", "Urgente", "Requiere Acción", "Tipo Alerta", "fecha inicio"]
             
             df = pd.DataFrame(rows, columns=cols)
             cursor.close()
@@ -120,13 +123,13 @@ class DashboardAlertas:
         title_frame.pack(fill='x')
         title_frame.pack_propagate(False)
         
-        title_label = tk.Label(title_frame, text="📊 Dashboard de Alertas de Contratos", 
+        title_label = tk.Label(title_frame, text="Alertas de Contratos", 
                               font=('Arial', 16, 'bold'), fg='white', bg='#e74c3c')
         title_label.pack(expand=True, pady=15)
 
     def crear_seccion_metricas(self, parent):
         """Crea la sección de métricas principales"""
-        metrics_frame = tk.LabelFrame(parent, text="📈 Resumen de Alertas", 
+        metrics_frame = tk.LabelFrame(parent, text="Resumen de Alertas", 
                                      font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50', 
                                      padx=15, pady=15)
         metrics_frame.pack(fill='x', pady=(0, 10))
@@ -143,9 +146,9 @@ class DashboardAlertas:
 
         # Crear métricas
         self._crear_metrica(metrics_row, "Total Alertas", self.total_alertas_var, '#3498db')
-        self._crear_metrica(metrics_row, "🚨 Urgentes", self.urgentes_var, '#e74c3c')
-        self._crear_metrica(metrics_row, "⏰ Requieren Acción", self.requieren_accion_var, '#f39c12')
-        self._crear_metrica(metrics_row, "👔 Jefes Afectados", self.jefes_afectados_var, '#9b59b6')
+        self._crear_metrica(metrics_row, "Urgentes", self.urgentes_var, '#e74c3c')
+        #self._crear_metrica(metrics_row, "Requieren Acción", self.requieren_accion_var, '#f39c12')
+        self._crear_metrica(metrics_row, "Jefes Afectados", self.jefes_afectados_var, '#9b59b6')
 
     def _crear_metrica(self, parent, titulo, variable, color):
         """Crea una métrica individual"""
@@ -192,13 +195,14 @@ class DashboardAlertas:
         tree_frame.pack(fill='both', expand=True)
 
         # Columnas
-        columns = ('Empleado', 'RUT', 'Cargo', 'Área', 'Jefe', 'Fecha Alerta', 
-                  'Motivo', 'Días hasta alerta', 'Estado')
+        columns = ('Empleado', 'Cargo', 'Jefe', 'Vencimiento', 
+                  'Motivo', 'Estado')
+        # 'RUT','Área','Días hasta alerta'
         
         self.alertas_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15)
         
         # Configurar columnas
-        anchos = [150, 100, 120, 100, 120, 100, 200, 80, 80]
+        anchos = [200, 150, 200, 100, 150, 100]
         for i, col in enumerate(columns):
             self.alertas_tree.heading(col, text=col)
             self.alertas_tree.column(col, width=anchos[i], anchor='w' if i < 6 else 'center')
@@ -276,27 +280,27 @@ class DashboardAlertas:
             # Determinar estado visual
             dias_hasta = row["Días hasta alerta"]
             if dias_hasta <= 0:
-                estado = "🔴 VENCIDA"
+                estado = "VENCIDA"
             elif row["Urgente"] == 1:
-                estado = "🟠 URGENTE"
+                estado = "URGENTE"
             elif row["Requiere Acción"] == 1:
-                estado = "🟡 ACCIÓN"
+                estado = "ACCIÓN"
             else:
-                estado = "🟢 FUTURA"
+                estado = "FUTURA"
 
             valores = (
-                row["Empleado"], row["RUT"], row["Cargo"], row["Área"], 
-                row["Jefe"], row["Fecha alerta"], row["Motivo"], 
-                str(dias_hasta), estado
+                row["Empleado"], row["Cargo"], 
+                row["Jefe"], row["fecha inicio"], row["Motivo"], 
+                estado
             )
-            
+            #row["Área"], row["RUT"],
             item = self.alertas_tree.insert('', 'end', values=valores)
             
-            # Colorear filas según urgencia
-            if dias_hasta <= 0:
-                self.alertas_tree.set(item, 'Estado', '🔴 VENCIDA')
-            elif row["Urgente"] == 1:
-                self.alertas_tree.set(item, 'Estado', '🟠 URGENTE')
+            # # Colorear filas según urgencia
+            # if dias_hasta <= 0:
+            #     self.alertas_tree.set(item, 'Estado', '🔴 VENCIDA')
+            # elif row["Urgente"] == 1:
+            #     self.alertas_tree.set(item, 'Estado', '🟠 URGENTE')
 
     def aplicar_filtro_actual(self):
         """Aplica el filtro seleccionado"""
@@ -373,7 +377,7 @@ class DashboardAlertas:
                     <th>Cargo</th>
                     <th>Área</th>
                     <th>Jefe</th>
-                    <th>Fecha Alerta</th>
+                    <th>fecha inicio</th>
                     <th>Motivo</th>
                     <th>Días hasta alerta</th>
                     <th>Estado</th>
@@ -391,7 +395,7 @@ class DashboardAlertas:
                     <td>{row['Cargo']}</td>
                     <td>{row['Área']}</td>
                     <td>{row['Jefe']}</td>
-                    <td>{row['Fecha alerta']}</td>
+                    <td>{row['fecha inicio']}</td>
                     <td>{row['Motivo']}</td>
                     <td>{dias_hasta}</td>
                     <td>{'🔴 VENCIDA' if dias_hasta <= 0 else '🟠 URGENTE' if row['Urgente'] == 1 else '🟡 ACCIÓN'}</td>

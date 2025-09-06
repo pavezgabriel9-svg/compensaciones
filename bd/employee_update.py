@@ -5,16 +5,25 @@ import pymysql
 import time
 import json
 import schedule
+import datetime
+from datetime import timedelta
 
 # Configuración API
 URL = "https://cramer.buk.cl/api/v1/chile/employees"
 TOKEN = "Xegy8dVsa1H8SFfojJcwYtDL"
 
-# Configuración BD
-DB_HOST = "10.254.33.138"
-DB_USER = "compensaciones_rrhh"
-DB_PASSWORD = "_Cramercomp2025_"
-DB_NAME = "rrhh_app"
+# Configuración BD - windows
+# DB_HOST = "10.254.33.138"
+# DB_USER = "compensaciones_rrhh"
+# DB_PASSWORD = "_Cramercomp2025_"
+# DB_NAME = "rrhh_app"
+
+# Configuración BD - mac
+DB_HOST = "localhost"
+DB_USER = "root"
+DB_PASSWORD = "cancionanimal"
+DB_NAME = "conexion_buk"
+
 
 # %%
 def obtener_todos_los_empleados_filtrados():
@@ -29,7 +38,7 @@ def obtener_todos_los_empleados_filtrados():
     
     print("🚀 Comenzando la obtención de todos los empleados con paginación...")
     
-    while url_actual:  # Limitar a 100 páginas para evitar bucles infinitos
+    while url_actual:
         print(f"📄 Obteniendo página {pagina_actual}...")
         
         try:
@@ -110,6 +119,251 @@ def obtener_todos_los_empleados_filtrados():
     print(f"🎉 ¡Paginación completada! Total de empleados filtrados: {len(empleados_filtrados)}")
     return empleados_filtrados
 
+# %%
+def limpiar_duplicados_existentes(cursor):
+    """Limpia los duplicados existentes antes de aplicar la nueva estructura"""
+    print("🧹 Limpiando duplicados existentes...")
+    
+    # Crear tabla temporal con registros únicos
+    sql_temp = """
+    CREATE TEMPORARY TABLE temp_employees AS
+    SELECT DISTINCT * FROM employees
+    """
+    
+    try:
+        cursor.execute(sql_temp)
+        
+        # Vaciar tabla original
+        cursor.execute("DELETE FROM employees")
+        
+        # Insertar registros únicos de vuelta
+        cursor.execute("INSERT INTO employees SELECT * FROM temp_employees")
+        
+        # Eliminar tabla temporal
+        cursor.execute("DROP TEMPORARY TABLE temp_employees")
+        
+        print("✅ Duplicados eliminados exitosamente")
+        
+    except Exception as e:
+        print(f"⚠️ Error limpiando duplicados: {e}")
+
+# %%
+def calcular_fecha_alerta(empleado):
+    """
+    Calcula la fecha de alerta según el tipo de contrato y status.
+    """
+    tipo_contrato = (empleado.get("contract_type") or "").lower()
+    status = (empleado.get("status") or "").lower()
+    metodo_pago = (empleado.get("payment_method") or "").lower()
+    fecha_activacion = empleado.get("active_since")
+    termino_primer_plazo = empleado.get("contract_finishing_date_1")
+    termino_segundo_plazo = empleado.get("contract_finishing_date_2")
+    
+    # Solo considerar empleados activos con transferencia bancaria o tipo de contrato fijo
+    if status != "activo" or metodo_pago != "transferencia bancaria" or tipo_contrato == "indefinido":
+        return None
+    
+    try:
+        if fecha_activacion:
+            fecha_activacion = datetime.datetime.strptime(fecha_activacion, "%Y-%m-%d")
+            primer_plazo = datetime.datetime.strptime(termino_primer_plazo, "%Y-%m-%d") if termino_primer_plazo else None
+            segundo_plazo = datetime.datetime.strptime(termino_segundo_plazo, "%Y-%m-%d") if termino_segundo_plazo else None
+        else:
+            return None
+        
+        fecha_alerta, motivo, tipo_alerta = None, None, None
+        
+        # Primera alerta → paso a segundo plazo
+        if tipo_contrato == "fijo" and primer_plazo is not None and segundo_plazo is not None:
+            fecha_alerta = fecha_activacion + timedelta(days=14)
+            motivo = "Segundo plazo de contratación"
+            tipo_alerta = "SEGUNDO_PLAZO"
+        
+        # Segunda alerta → paso a indefinido  
+        elif tipo_contrato == "fijo" and primer_plazo is not None and segundo_plazo is None:
+            fecha_alerta = fecha_activacion + timedelta(days=76)
+            motivo = "Paso a contrato indefinido"
+            tipo_alerta = "INDEFINIDO"
+        
+        if fecha_alerta:
+            return {
+                "fecha_alerta": fecha_alerta.strftime("%Y-%m-%d"),
+                "motivo": motivo,
+                "tipo_alerta": tipo_alerta,
+                "dias_desde_inicio": (datetime.datetime.now() - fecha_activacion).days,
+                "requiere_accion": fecha_alerta <= datetime.datetime.now(),
+                "urgente": (fecha_alerta - datetime.datetime.now()).days <= 7 if fecha_alerta > datetime.datetime.now() else True
+            }
+        else:
+            return None
+            
+    except ValueError as e:
+        print(f"Error procesando fechas para {empleado.get('full_name')}: {e}")
+        return None
+
+# %%
+def obtener_info_jefe(id_boss, rut_boss, empleados_lista):
+    """
+    Busca la información del jefe en la lista de empleados.
+    """
+    if not id_boss and not rut_boss:
+        return None, None, None
+    
+    for empleado in empleados_lista:
+        # Buscar por ID primero, luego por RUT
+        if (id_boss and empleado.get("id") == id_boss) or (rut_boss and empleado.get("rut") == rut_boss):
+            return (
+                empleado.get("full_name"),
+                empleado.get("email"),
+                empleado.get("rut")
+            )
+    
+    return None, None, None
+
+# %%
+def generar_alertas(cursor, conexion):
+    """
+    Procesa los empleados de la base de datos y genera alertas de contrato.
+    """
+    print("🔄 === PROCESANDO ALERTAS DE CONTRATOS ===\n")
+    
+    # Crear la tabla de alertas si no existe
+    sql_create_alerts_table = """
+    CREATE TABLE IF NOT EXISTS contract_alerts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        employee_id INT NOT NULL,
+        employee_name VARCHAR(255),
+        employee_rut VARCHAR(50),
+        employee_area_name VARCHAR(255),
+        employee_role VARCHAR(255),
+        employee_start_date DATE,
+        employee_contract_type VARCHAR(50),
+        boss_name VARCHAR(255),
+        boss_email VARCHAR(255),
+        alert_date DATE NOT NULL,
+        alert_type VARCHAR(50),
+        alert_reason TEXT,
+        days_since_start INT,
+        requires_action BOOLEAN DEFAULT FALSE,
+        is_urgent BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        processed BOOLEAN DEFAULT FALSE,
+        notes TEXT,
+        INDEX idx_employee_id (employee_id),
+        INDEX idx_alert_date (alert_date),
+        INDEX idx_requires_action (requires_action),
+        INDEX idx_is_urgent (is_urgent),
+        INDEX idx_processed (processed)
+    );
+    """
+    cursor.execute(sql_create_alerts_table)
+    print("✅ Tabla 'contract_alerts' creada/verificada exitosamente")
+    
+    # Consulta para obtener todos los empleados necesarios
+    sql_empleados = """
+    SELECT 
+        id, person_id, full_name, rut, email, area_id, name_role,
+        start_date, contract_type, base_wage, id_boss, rut_boss,
+        active_since, contract_finishing_date_1, contract_finishing_date_2,
+        status, payment_method
+    FROM employees 
+    WHERE status = 'activo'
+    """
+    
+    cursor.execute(sql_empleados)
+    empleados_db = cursor.fetchall()
+    
+    # Convertir a lista de diccionarios para facilitar el manejo
+    empleados_lista = []
+    columnas = [
+        'id', 'person_id', 'full_name', 'rut', 'email', 'area_id', 'name_role',
+        'start_date', 'contract_type', 'base_wage', 'id_boss', 'rut_boss',
+        'active_since', 'contract_finishing_date_1', 'contract_finishing_date_2',
+        'status', 'payment_method'
+    ]
+    
+    for empleado_tupla in empleados_db:
+        empleado_dict = {}
+        for i, columna in enumerate(columnas):
+            valor = empleado_tupla[i]
+            if isinstance(valor, datetime.date):
+                valor = valor.strftime("%Y-%m-%d")
+            empleado_dict[columna] = valor
+        empleados_lista.append(empleado_dict)
+    
+    print(f"✅ Cargados {len(empleados_lista)} empleados activos desde la BD")
+    
+    alertas_insertadas = 0
+    empleados_procesados = 0
+    errores = 0
+
+    for empleado in empleados_lista:
+        empleados_procesados += 1
+        alerta = calcular_fecha_alerta(empleado)
+        
+        if alerta:
+            try:
+                # Obtener información del jefe
+                boss_name, boss_email, boss_rut_real = obtener_info_jefe(
+                    empleado.get("id_boss"), 
+                    empleado.get("rut_boss"), 
+                    empleados_lista
+                )
+                
+                # Preparar datos para insertar
+                sql_insert = """
+                INSERT INTO contract_alerts (
+                    employee_id, employee_name, employee_rut, employee_area_name, employee_role, employee_start_date, 
+                    employee_contract_type,
+                    boss_name, boss_email,
+                    alert_date, alert_type, alert_reason, days_since_start,
+                    requires_action, is_urgent
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                )
+                """
+                
+                # Ejecutar inserción
+                cursor.execute(sql_insert, (
+                    empleado["id"],
+                    empleado["full_name"],
+                    empleado["rut"],
+                    # Nota: La función obtener_nombre_area fue eliminada para simplificar
+                    "N/A", # Placeholder para area_name
+                    empleado["name_role"],
+                    empleado["start_date"],
+                    empleado["contract_type"],
+                    boss_name,
+                    boss_email,
+                    alerta["fecha_alerta"],
+                    alerta["tipo_alerta"],
+                    alerta["motivo"],
+                    alerta["dias_desde_inicio"],
+                    alerta["requiere_accion"],
+                    alerta["urgente"]
+                ))
+                
+                alertas_insertadas += 1.
+                
+                if empleados_procesados % 50 == 0:
+                    print(f"📊 Procesados: {empleados_procesados}/{len(empleados_lista)} empleados...")
+                    
+            except Exception as e:
+                errores += 1.
+                print(f"❌ Error insertando alerta para {empleado.get('full_name', 'N/A')}: {e}")
+
+    conexion.commit()
+    print(f"""
+✅ === PROCESO COMPLETADO ===
+👥 Empleados procesados: {empleados_procesados}
+🚨 Alertas generadas: {alertas_insertadas}
+❌ Errores: {errores}
+💾 Cambios guardados en la base de datos
+""")
+
+
+# %%
 def job_sincronizar_empleados():
     """Esta función se ejecutará todos los días a las 8:00 AM"""
     print(f"\n🕗 INICIANDO SINCRONIZACIÓN PROGRAMADA: {time.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -134,13 +388,13 @@ def job_sincronizar_empleados():
 
         print(f"✅ Conectado a MySQL y usando la base: {DB_NAME}")
 
-        print("🚀 Creando tabla employees completa si no existe...")
+        print("🚀 Creando tabla employees con clave primaria...")
         sql_create_table = """
         CREATE TABLE IF NOT EXISTS employees (
-            person_id INT,
-            id INT,
+            person_id INT UNIQUE,  
             full_name VARCHAR(255),
-            rut VARCHAR(50),
+            rut VARCHAR(50) PRIMARY KEY, -- Clave primaria
+            id INT, 
             email VARCHAR(255),
             personal_email VARCHAR(255),
             address TEXT,
@@ -181,15 +435,23 @@ def job_sincronizar_empleados():
             contract_finishing_date_2 DATE,
             name_role VARCHAR(255),
             area_id INT,
-            cost_center VARCHAR(255)
+            cost_center VARCHAR(255),
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP  -- TIMESTAMP DE ACTUALIZACIÓN
         );
         """
         cursor.execute(sql_create_table)
-        print("✅ Tabla 'employees' creada exitosamente")
+        print("✅ Tabla 'employees' creada exitosamente con clave primaria")
 
-        # Insertar empleados
-        print("🚀 Insertando TODOS los empleados en la tabla SQL...")
+        # Limpiar duplicados existentes si la tabla ya tenía datos
+        cursor.execute("SELECT COUNT(*) FROM employees")
+        count = cursor.fetchone()[0]
+        if count > 0:
+            limpiar_duplicados_existentes(cursor)
+
+        # Insertar empleados con ON DUPLICATE KEY UPDATE mejorado
+        print("🚀 Insertando/Actualizando empleados en la tabla SQL...")
         contador = 0
+        actualizaciones = 0
         errores = 0
 
         for e in empleados_filtrados:
@@ -211,9 +473,13 @@ def job_sincronizar_empleados():
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 ON DUPLICATE KEY UPDATE
-                    person_id=VALUES(person_id),
-                    full_name=VALUES(full_name),
-                    rut=VALUES(rut),
+                    -- CAMPOS INMUTABLES (NO SE ACTUALIZAN)
+                    -- person_id NO se actualiza (inmutable)
+                    -- id NO se actualiza (clave primaria, inmutable)  
+                    -- rut NO se actualiza (inmutable)
+                    -- full_name NO se actualiza (inmutable)
+                    
+                    -- CAMPOS QUE SÍ SE ACTUALIZAN
                     email=VALUES(email),
                     personal_email=VALUES(personal_email),
                     active_since=VALUES(active_since),
@@ -304,24 +570,31 @@ def job_sincronizar_empleados():
                     e.get("base_wage"),
                     e.get("name_role") 
                 )
-                if len(values) != 45:
-                    print(f"⚠️ Error: empleado {e.get('id', 'N/A')} tiene {len(values)} valores, se esperaban 45.")
-                    print("Valores:", values)
-                    continue 
+                
                 cursor.execute(sql, values)
-                contador += 1
+                
+                # Verificar si fue INSERT o UPDATE
+                if cursor.rowcount == 1:
+                    contador += 1
+                elif cursor.rowcount == 2:  # MySQL devuelve 2 cuando hace UPDATE
+                    actualizaciones += 1
                 
                 # Mostrar progreso cada 100 registros
-                if contador % 100 == 0:
-                    print(f"📝 Procesados {contador} empleados...")      
+                if (contador + actualizaciones) % 100 == 0:
+                    print(f"📝 Procesados {contador + actualizaciones} empleados (Nuevos: {contador}, Actualizados: {actualizaciones})...")      
             except Exception as error:
-                print(f"⚠️ Error insertando empleado {e.get('id', 'N/A')}: {error}")
+                print(f"⚠️ Error procesando empleado {e.get('id', 'N/A')}: {error}")
                 errores += 1
 
         conexion.commit()
-        print(f"✅ {contador} registros insertados/actualizados en MySQL.")
+        print(f"✅ Procesamiento completado:")
+        print(f"   📝 Nuevos registros: {contador}")
+        print(f"   🔄 Registros actualizados: {actualizaciones}")
         if errores > 0:
-            print(f"⚠️ Se produjeron {errores} errores durante la inserción.")
+            print(f"   ⚠️ Errores: {errores}")
+            
+        # Generar alertas después de actualizar los datos
+        generar_alertas(cursor, conexion)
 
         cursor.close()
         conexion.close()
@@ -330,17 +603,17 @@ def job_sincronizar_empleados():
         
     except Exception as e:
         print(f"❌ Error general en la sincronización: {e}")
-
+        
 # %%
 # PROGRAMACIÓN AUTOMÁTICA
-schedule.every().day.at("16:03").do(job_sincronizar_empleados)
+#job_sincronizar_empleados()  # ejecuta AHORA
+#schedule.every().day.at("08:00").do(job_sincronizar_empleados)
 
-print("📅 SCHEDULER ACTIVO - Se ejecutará todos los días a las 16:03")
-print("👉 Para testing: cambia '16:03' por la hora actual +1 minuto")
+print("SCHEDULER ACTIVO - Se ejecutará todos los días a las 09:00")
 print("🛑 Presiona Ctrl+C para detener el scheduler")
 print("⏰ Próxima ejecución programada:", schedule.next_run())
 
 # Mantener el script corriendo
-while True:
-    schedule.run_pending()
-    time.sleep(30)  # Revisar cada 30 segundos
+#while True:
+#     schedule.run_pending()
+#     time.sleep(600)  # Revisar cada 10 minutos
