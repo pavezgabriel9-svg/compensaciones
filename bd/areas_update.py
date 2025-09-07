@@ -10,11 +10,17 @@ from pymysql.err import IntegrityError
 URL_AREAS = 'https://cramer.buk.cl/api/v1/chile/organization/areas/?status=both'
 TOKEN = "Xegy8dVsa1H8SFfojJcwYtDL"
 
-# Configuración BD
-DB_HOST = "10.254.33.138"
-DB_USER = "compensaciones_rrhh"
-DB_PASSWORD = "_Cramercomp2025_"
-DB_NAME = "rrhh_app"
+# Configuración BD - windows
+# DB_HOST = "10.254.33.138"
+# DB_USER = "compensaciones_rrhh"
+# DB_PASSWORD = "_Cramercomp2025_"
+# DB_NAME = "rrhh_app"
+
+# Configuración BD - mac
+DB_HOST = "localhost"
+DB_USER = "root"
+DB_PASSWORD = "cancionanimal"
+DB_NAME = "conexion_buk"
 
 #%%
 def obtener_todas_las_areas():
@@ -245,18 +251,18 @@ if __name__ == "__main__":
     #job_sincronizar_areas()
     
     # Programar ejecución mensual (primer día de cada mes a las 08:00)
-    schedule.every().month.do(job_sincronizar_areas)
+    # schedule.every(30).days.do(job_sincronizar_areas)
     
-    print("\nSCHEDULER ACTIVO")
-    print("Se ejecutará el primer día de cada mes a las 08:00")
-    print("Presiona Ctrl+C para detener el scheduler")
-    print("Próxima ejecución programada:", schedule.next_run())
+    # print("\nSCHEDULER ACTIVO")
+    # print("Se ejecutará el primer día de cada mes a las 08:00")
+    # print("Presiona Ctrl+C para detener el scheduler")
+    # print("Próxima ejecución programada:", schedule.next_run())
     
-    # Mantener el script corriendo
-    try:
-        while True:
-            schedule.run_pending()
-            time.sleep(3600)  # Revisar cada hora
-    except KeyboardInterrupt:
-        print("\n🛑 Scheduler detenido por el usuario")
-        print("👋 ¡Hasta luego!")
+    # # Mantener el script corriendo
+    # try:
+    #     while True:
+    #         schedule.run_pending()
+    #         time.sleep(3600)  # Revisar cada hora
+    # except KeyboardInterrupt:
+    #     print("\n🛑 Scheduler detenido por el usuario")
+    #     print("👋 ¡Hasta luego!")
