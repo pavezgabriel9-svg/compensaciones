@@ -4,33 +4,31 @@ import os
 import pymysql
 import time
 import json
-import schedule
 import datetime
 from datetime import timedelta
+import sys
+
 
 # Configuración API
 URL = "https://cramer.buk.cl/api/v1/chile/employees"
 TOKEN = "Xegy8dVsa1H8SFfojJcwYtDL"
 
 # Configuración BD - windows
-# DB_HOST = "10.254.33.138"
-# DB_USER = "compensaciones_rrhh"
-# DB_PASSWORD = "_Cramercomp2025_"
-# DB_NAME = "rrhh_app"
+DB_HOST = "10.254.32.110"
+DB_USER = "compensaciones_rrhh"
+DB_PASSWORD = "_Cramercomp2025_"
+DB_NAME = "rrhh_app"
 
-# Configuración BD - mac
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "cancionanimal"
-DB_NAME = "conexion_buk"
+# # Configuración BD - mac
+# DB_HOST = "localhost"
+# DB_USER = "root"
+# DB_PASSWORD = "cancionanimal"
+# DB_NAME = "conexion_buk"
 
 
 # %%
 def obtener_todos_los_empleados_filtrados():
-    """
-    Obtiene todos los empleados desde la API con paginación y los devuelve filtrados
-    con solo los campos necesarios.
-    """
+    """Sincroniza empleados y genera alertas (ejecución programada por Windows)."""
     headers = {"auth_token": TOKEN}
     empleados_filtrados = []
     url_actual = URL
@@ -344,13 +342,13 @@ def generar_alertas(cursor, conexion):
                     alerta["urgente"]
                 ))
                 
-                alertas_insertadas += 1.
+                alertas_insertadas += 1
                 
                 if empleados_procesados % 50 == 0:
                     print(f"📊 Procesados: {empleados_procesados}/{len(empleados_lista)} empleados...")
                     
             except Exception as e:
-                errores += 1.
+                errores += 1
                 print(f"❌ Error insertando alerta para {empleado.get('full_name', 'N/A')}: {e}")
 
     conexion.commit()
@@ -474,12 +472,11 @@ def job_sincronizar_empleados():
                 )
                 ON DUPLICATE KEY UPDATE
                     -- CAMPOS INMUTABLES (NO SE ACTUALIZAN)
-                    -- person_id NO se actualiza (inmutable)
-                    -- id NO se actualiza (clave primaria, inmutable)  
                     -- rut NO se actualiza (inmutable)
-                    -- full_name NO se actualiza (inmutable)
                     
                     -- CAMPOS QUE SÍ SE ACTUALIZAN
+                    person_id=VALUES(person_id),
+                    full_name=VALUES(full_name),
                     email=VALUES(email),
                     personal_email=VALUES(personal_email),
                     active_since=VALUES(active_since),
@@ -603,17 +600,20 @@ def job_sincronizar_empleados():
         
     except Exception as e:
         print(f"❌ Error general en la sincronización: {e}")
+
+    with open("C:/Users/gpavez/Desktop/logs_sync_empleados.txt", "a", encoding="utf-8") as f:
+        f.write(f"{datetime.datetime.now()}: Sincronización de empleados completada\n")
         
-# %%
-# PROGRAMACIÓN AUTOMÁTICA
-#job_sincronizar_empleados()  # ejecuta AHORA
-#schedule.every().day.at("08:00").do(job_sincronizar_empleados)
+#%%
+if __name__ == "__main__":
+    print("SISTEMA DE SINCRONIZACIÓN DE empleados - MODO PROGRAMADOR DE TAREAS")
+    print("="*70)
+    
+    # Ejecutar SOLO UNA VEZ (para el Programador de Tareas)
+    print("🔍 Ejecutando sincronización programada...")
+    job_sincronizar_empleados()
+    
+    print("✅ Tarea completada. El script finalizará automáticamente.")
+    print("La próxima ejecución será programada por Windows.")
 
-print("SCHEDULER ACTIVO - Se ejecutará todos los días a las 09:00")
-print("🛑 Presiona Ctrl+C para detener el scheduler")
-print("⏰ Próxima ejecución programada:", schedule.next_run())
-
-# Mantener el script corriendo
-#while True:
-#     schedule.run_pending()
-#     time.sleep(600)  # Revisar cada 10 minutos
+    sys.exit(0)

@@ -2,25 +2,25 @@
 import requests
 import pymysql
 import time
-import schedule
 from datetime import datetime
 from pymysql.err import IntegrityError
+import sys
 
 # Configuración API
 URL_AREAS = 'https://cramer.buk.cl/api/v1/chile/organization/areas/?status=both'
 TOKEN = "Xegy8dVsa1H8SFfojJcwYtDL"
 
 # Configuración BD - windows
-# DB_HOST = "10.254.33.138"
-# DB_USER = "compensaciones_rrhh"
-# DB_PASSWORD = "_Cramercomp2025_"
-# DB_NAME = "rrhh_app"
+DB_HOST = "10.254.32.110"
+DB_USER = "compensaciones_rrhh"
+DB_PASSWORD = "_Cramercomp2025_"
+DB_NAME = "rrhh_app"
 
 # Configuración BD - mac
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "cancionanimal"
-DB_NAME = "conexion_buk"
+# DB_HOST = "localhost"
+# DB_USER = "root"
+# DB_PASSWORD = "cancionanimal"
+# DB_NAME = "conexion_buk"
 
 #%%
 def obtener_todas_las_areas():
@@ -237,32 +237,23 @@ def job_sincronizar_areas():
         print(f"❌ Error general en la sincronización: {e}")
         if 'conexion' in locals():
             conexion.close()
+    
+    with open('C:/Users/gpavez/Desktop/sync_log.txt', 'a') as f:
+        f.write(f"{datetime.now()}: Sincronización completada\n")
 
 # ========================================
 # EJECUCIÓN Y SCHEDULER
 # ========================================
 
 if __name__ == "__main__":
-    print("SISTEMA DE SINCRONIZACIÓN DE ÁREAS")
-    print("="*50)
+    print("SISTEMA DE SINCRONIZACIÓN DE ÁREAS - MODO PROGRAMADOR DE TAREAS")
+    print("="*70)
     
-    # Ejecutar una vez al inicio para verificar que funciona
-    #print("🔍 Ejecutando sincronización inicial...")
-    #job_sincronizar_areas()
+    # Ejecutar SOLO UNA VEZ (para el Programador de Tareas)
+    print("🔍 Ejecutando sincronización programada...")
+    job_sincronizar_areas()
     
-    # Programar ejecución mensual (primer día de cada mes a las 08:00)
-    # schedule.every(30).days.do(job_sincronizar_areas)
-    
-    # print("\nSCHEDULER ACTIVO")
-    # print("Se ejecutará el primer día de cada mes a las 08:00")
-    # print("Presiona Ctrl+C para detener el scheduler")
-    # print("Próxima ejecución programada:", schedule.next_run())
-    
-    # # Mantener el script corriendo
-    # try:
-    #     while True:
-    #         schedule.run_pending()
-    #         time.sleep(3600)  # Revisar cada hora
-    # except KeyboardInterrupt:
-    #     print("\n🛑 Scheduler detenido por el usuario")
-    #     print("👋 ¡Hasta luego!")
+    print("✅ Tarea completada. El script finalizará automáticamente.")
+    print("La próxima ejecución será programada por Windows.")
+
+    sys.exit(0)
