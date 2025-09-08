@@ -1,7 +1,4 @@
-#-----------------------------------------------------------
-#                CompensaViewer v3.1 - Dashboard de Compensaciones
-#                      VERSION CORREGIDA PARA NUEVA BD
-#-----------------------------------------------------------
+#Importaciones
 import tkinter as tk
 from tkinter import ttk, messagebox
 import pymysql
@@ -12,9 +9,7 @@ import matplotlib.dates as mdates
 from datetime import datetime
 import traceback
 
-# ----------------------------------------------------------
 # Config BD
-# ----------------------------------------------------------
 DB_HOST = "localhost"
 DB_USER = "root"
 DB_PASSWORD = "cancionanimal"
@@ -28,7 +23,6 @@ class CompensaViewer:
         self.data_df = None
         self.employees_df = None
         self.setup_ui()
-        # Primero verificamos la estructura de la BD
         self.verificar_estructura_bd()
         self.cargar_datos()
 
@@ -55,55 +49,57 @@ class CompensaViewer:
             return None
 
     def verificar_estructura_bd(self):
-        """Verifica qué columnas existen en las tablas principales"""
-        conn = self.conectar_bd()
-        if not conn:
+        """Verifica qué columnas existen en las tablas principales a consultar"""
+        conexion = self.conectar_bd()
+        if not conexion:
             return
         
         try:
-            # Verificar columnas de historical_settlements
-            cursor = conn.cursor()
+           
+            cursor = conexion.cursor()
+            
+            # Verificar columnas settlements
             cursor.execute("DESCRIBE historical_settlements")
             columns_hs = [row[0] for row in cursor.fetchall()]
-            
             print("Columnas en historical_settlements:", columns_hs)
             
             # Verificar columnas de employees
             cursor.execute("DESCRIBE employees")
             columns_emp = [row[0] for row in cursor.fetchall()]
-            
             print("Columnas en employees:", columns_emp)
             
             # Verificar columnas de employees_jobs
             cursor.execute("DESCRIBE employees_jobs")
-            columns_ej = [row[0] for row in cursor.fetchall()]
-            
+            columns_ej = [row[0] for row in cursor.fetchall()]            
             print("Columnas en employees_jobs:", columns_ej)
             
             # Verificar columnas de areas
             cursor.execute("DESCRIBE areas")
-            columns_areas = [row[0] for row in cursor.fetchall()]
-            
+            columns_areas = [row[0] for row in cursor.fetchall()]            
             print("Columnas en areas:", columns_areas)
             
-            conn.close()
+            conexion.close()
             
         except Exception as e:
             print(f"Error verificando estructura: {e}")
-            if conn:
-                conn.close()
+            if conexion:
+                conexion.close()
+                
+
+#revisión hasta acá
+
 
     def obtener_datos(self):
         """Obtiene datos históricos con query adaptada a la estructura real"""
-        conn = self.conectar_bd()
-        if not conn:
+        conexion = self.conectar_bd()
+        if not conexion:
             return pd.DataFrame()
         
         try:
-            # Query simplificada y adaptada
+            # Query
             query = """
             SELECT 
-                -- Employees básicos
+                -- Employees
                 e.person_id AS ID_Persona,
                 e.rut AS RUT,
                 e.full_name AS Nombre,
@@ -149,11 +145,12 @@ class CompensaViewer:
                 ON e.area_id = a.id
             LEFT JOIN employees jefe
                 ON ej.boss_rut = jefe.rut
+            WHERE e.status = 'activo'
             ORDER BY e.person_id, hs.periodo
             """
             
             print("Ejecutando query...")
-            df = pd.read_sql(query, conn)
+            df = pd.read_sql(query, conexion)
             print(f"Query exitosa. Registros obtenidos: {len(df)}")
 
             # Post-procesamiento
@@ -166,14 +163,14 @@ class CompensaViewer:
                 # Crear columna Estado
                 df["Estado"] = df["end_date"].apply(lambda x: "Activo" if pd.isna(x) else "Inactivo")
 
-            conn.close()
+            conexion.close()
             return df
         
         except Exception as e:
             print(f"Error completo: {traceback.format_exc()}")
             messagebox.showerror("Error SQL", f"Error consultando datos:\n{e}")
-            if conn:
-                conn.close()
+            if conexion:
+                conexion.close()
             return pd.DataFrame()
 
     def obtener_datos_empleados(self):
@@ -186,9 +183,6 @@ class CompensaViewer:
             query = """
             SELECT 
                 person_id, full_name, rut, 
-                COALESCE(email, '') as email,
-                COALESCE(personal_email, '') as personal_email,
-                COALESCE(address, '') as address,
                 COALESCE(phone, '') as phone,
                 gender, birthday, 
                 COALESCE(university, '') as university,
@@ -209,8 +203,7 @@ class CompensaViewer:
             return pd.DataFrame()
 
     # ------------------------------------------------------
-    # UI principal (sin cambios)
-    # ------------------------------------------------------
+    # Interface de Usuario
     def setup_ui(self):
         # Título barra
         title_frame = tk.Frame(self.root, bg='#2980b9', height=60)
