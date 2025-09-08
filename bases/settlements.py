@@ -10,6 +10,9 @@ import logging
 import sys
 import json
 import traceback
+import sys
+import io
+
 
 # ========== CONFIGURACIÓN LOGGING ==========
 # Crear un logger personalizado
@@ -33,16 +36,16 @@ logger.addHandler(handler_file)
 
 # ========== CONFIGURACIÓN BD ==========
 # Configuración BD - mac
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "cancionanimal"
-DB_NAME = "conexion_buk"
+# DB_HOST = "localhost"
+# DB_USER = "root"
+# DB_PASSWORD = "cancionanimal"
+# DB_NAME = "conexion_buk"
 
 # Configuración BD - windows
-# DB_HOST = "10.254.33.138"
-# DB_USER = "compensaciones_rrhh"
-# DB_PASSWORD = "_Cramercomp2025_"
-# DB_NAME = "rrhh_app"
+DB_HOST = "10.254.32.110"
+DB_USER = "compensaciones_rrhh"
+DB_PASSWORD = "_Cramercomp2025_"
+DB_NAME = "rrhh_app"
 
 # Nombre tablas
 TABLE_PAYROLLS = "historical_settlements"
@@ -75,13 +78,13 @@ def request_with_retry(session, url, headers, max_retries=5, backoff_base=1.5, t
                 requests.exceptions.HTTPError) as e:
             attempt += 1
             wait = backoff_base ** attempt
-            logger.warning(f"  ⚠️ Request error (attempt {attempt}/{max_retries}) for URL: {url}\n     {e}\n     Waiting {wait:.1f}s before retry")
+            logger.warning(f"  Request error (attempt {attempt}/{max_retries}) for URL: {url}\n     {e}\n     Waiting {wait:.1f}s before retry")
             time.sleep(wait)
         except Exception as e:
             # errores inesperados: no reintentar muchas veces
             attempt += 1
             wait = backoff_base ** attempt
-            logger.warning(f"  ⚠️ Unexpected error (attempt {attempt}/{max_retries}): {e}\n     Waiting {wait:.1f}s")
+            logger.warning(f"  Unexpected error (attempt {attempt}/{max_retries}): {e}\n     Waiting {wait:.1f}s")
             time.sleep(wait)
     raise RuntimeError(f"Failed to GET {url} after {max_retries} attempts")
 
@@ -102,13 +105,13 @@ def get_all_liquidaciones_data(base_url, token, date_param):
             data = request_with_retry(session, url, headers)
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 401:
-                logger.error("❌ ¡Error de autenticación! Token inválido o expirado.")
+                logger.error(" Error de autenticación! Token inválido o expirado.")
                 raise # Propagar el error para detener la ejecución
             else:
-                logger.error(f"   ❌ Error HTTP inesperado en la página {page} para {date_param}: {e}")
+                logger.error(f"   Error HTTP inesperado en la página {page} para {date_param}: {e}")
                 raise
         except Exception as e:
-            logger.error(f"   ❌ Error obteniendo página {page} para {date_param}: {e}")
+            logger.error(f"   Error obteniendo página {page} para {date_param}: {e}")
             raise
 
         page_data = data.get("data", [])
@@ -227,7 +230,7 @@ def ensure_tables_and_indexes(engine):
     with engine.begin() as conn:
         # Tabla payrolls (historical_settlements)
         if not insp.has_table(TABLE_PAYROLLS):
-            logger.info(f"ℹ️ Creando tabla {TABLE_PAYROLLS} (primer uso)...")
+            logger.info(f"Creando tabla {TABLE_PAYROLLS} (primer uso)...")
             create_sql = f"""
             CREATE TABLE {TABLE_PAYROLLS} (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -258,30 +261,30 @@ def ensure_tables_and_indexes(engine):
             """
             conn.execute(text(create_sql))
             
-            # ➡️ MEJORA: Índice único compuesto (Liquidacion_ID, Ano, Mes)
+            #  MEJORA: Índice único compuesto (Liquidacion_ID, Ano, Mes)
             conn.execute(text(f"CREATE UNIQUE INDEX ux_{TABLE_PAYROLLS}_liquidacion_period ON {TABLE_PAYROLLS} (Liquidacion_ID, Ano, Mes);"))
             
             # Índices adicionales para performance
             conn.execute(text(f"CREATE INDEX idx_{TABLE_PAYROLLS}_empleado ON {TABLE_PAYROLLS} (ID_Empleado);"))
             conn.execute(text(f"CREATE INDEX idx_{TABLE_PAYROLLS}_periodo ON {TABLE_PAYROLLS} (Pay_Period);"))
             
-            logger.info(f"✅ Tabla {TABLE_PAYROLLS} creada con índices corregidos.")
+            logger.info(f"Tabla {TABLE_PAYROLLS} creada con índices corregidos.")
         else:
             # Si la tabla ya existe, corregir índices
             try:
                 # Intenta eliminar el índice antiguo si existe
                 conn.execute(text(f"DROP INDEX ux_{TABLE_PAYROLLS}_liquidacion_id ON {TABLE_PAYROLLS}"))
-                logger.info("🔧 Índice simple antiguo eliminado.")
+                logger.info(" Índice simple antiguo eliminado.")
             except Exception:
                 pass  # No existía, no hay problema
             
             try:
                 # Intenta crear el índice compuesto correcto
                 conn.execute(text(f"CREATE UNIQUE INDEX ux_{TABLE_PAYROLLS}_liquidacion_period ON {TABLE_PAYROLLS} (Liquidacion_ID, Ano, Mes);"))
-                logger.info("✅ Índice único compuesto corregido/creado.")
+                logger.info(" Índice único compuesto corregido/creado.")
             except Exception as e:
                 if "Duplicate key name" not in str(e):
-                    logger.warning(f"⚠️ No se pudo crear índice único: {e}")
+                    logger.warning(f" No se pudo crear índice único: {e}")
                     
             # Asegurar índice para consultas por período
             try:
@@ -291,7 +294,7 @@ def ensure_tables_and_indexes(engine):
 
         # Tabla items (sin cambios necesarios)
         if not insp.has_table(TABLE_ITEMS):
-            logger.info(f"ℹ️ Creando tabla {TABLE_ITEMS} (primer uso)...")
+            logger.info(f"Creando tabla {TABLE_ITEMS} (primer uso)...")
             create_items_sql = f"""
             CREATE TABLE {TABLE_ITEMS} (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -316,14 +319,14 @@ def ensure_tables_and_indexes(engine):
             );
             """
             conn.execute(text(create_items_sql))
-            logger.info(f"✅ Tabla {TABLE_ITEMS} creada.")
+            logger.info(f"Tabla {TABLE_ITEMS} creada.")
 
 def save_payrolls_batch_fixed(engine, df_payrolls):
     """
     Optimización: Usa una tabla temporal para un UPSERT atómico y eficiente.
     """
     if df_payrolls is None or df_payrolls.empty:
-        logger.warning("   ⚠️ No hay filas de liquidaciones para insertar.")
+        logger.warning("   No hay filas de liquidaciones para insertar.")
         return 0
 
     df = df_payrolls.copy()
@@ -331,7 +334,7 @@ def save_payrolls_batch_fixed(engine, df_payrolls):
     # Pre-procesamiento de datos
     df = df.dropna(subset=['Liquidacion_ID', 'Año', 'Mes'])
     if df.empty:
-        logger.warning("   ⚠️ No quedan filas válidas después del filtrado.")
+        logger.warning("   No quedan filas válidas después del filtrado.")
         return 0
     
     df = df.rename(columns={
@@ -357,7 +360,7 @@ def save_payrolls_batch_fixed(engine, df_payrolls):
             # 2. Insertar datos en tabla temporal
             df.to_sql(temp_table, con=conn, if_exists="append", index=False, method='multi')
             
-            # 3. ➡️ MEJORA: UPSERT con ON DUPLICATE KEY UPDATE
+            # 3.  MEJORA: UPSERT con ON DUPLICATE KEY UPDATE
             upsert_sql = f"""
             INSERT INTO {TABLE_PAYROLLS} 
             (Liquidacion_ID, ID_Persona, ID_Empleado, RUT, Periodo, Ano, Mes, Pay_Period, Dias_Trabajados,
@@ -394,14 +397,14 @@ def save_payrolls_batch_fixed(engine, df_payrolls):
             inserted = len(df)
             
         except Exception as e:
-            logger.error(f"     ❌ Error en save_payrolls_batch_fixed: {e}")
+            logger.error(f"     Error en save_payrolls_batch_fixed: {e}")
             logger.error(f"     Traceback completo: {traceback.format_exc()}")
             raise
         finally:
             # La tabla temporal se elimina automáticamente al cerrar la conexión
             pass
     
-    logger.info(f"   ✅ Insertados/actualizados: {inserted} filas en {TABLE_PAYROLLS}")
+    logger.info(f"   Insertados/actualizados: {inserted} filas en {TABLE_PAYROLLS}")
     return inserted
 
 def save_items_batch(engine, items_df):
@@ -409,7 +412,7 @@ def save_items_batch(engine, items_df):
     Inserta items (lines_settlement) en tabla items.
     """
     if items_df is None or items_df.empty:
-        logger.warning("   ⚠️ No hay items para insertar.")
+        logger.warning("   No hay items para insertar.")
         return 0
 
     df = items_df.copy()
@@ -428,10 +431,10 @@ def save_items_batch(engine, items_df):
             df.to_sql(TABLE_ITEMS, con=conn, if_exists="append", index=False)
             inserted = len(df)
         except Exception as e:
-            logger.error(f"     ❌ Error insertando items en {TABLE_ITEMS}: {e}")
+            logger.error(f"     Error insertando items en {TABLE_ITEMS}: {e}")
             logger.error(f"     Traceback completo: {traceback.format_exc()}")
 
-    logger.info(f"   ✅ Insertados: {inserted} filas en {TABLE_ITEMS}")
+    logger.info(f"   Insertados: {inserted} filas en {TABLE_ITEMS}")
     return inserted
 
 # ------------------ Periodos mensuales ------------------
@@ -452,7 +455,7 @@ def generate_monthly_periods(start_year=2019, start_month=1):
 # ------------------ FUNCIÓN DE VERIFICACIÓN ------------------
 def verify_data_insertion(engine, year, month):
     """
-    ➡️ MEJORA: Función para verificar que los datos se insertaron correctamente.
+     MEJORA: Función para verificar que los datos se insertaron correctamente.
     Muestra el total de registros y la cantidad de IDs distintos para validación.
     """
     with engine.connect() as conn:
@@ -484,13 +487,13 @@ def main():
         engine = get_db_engine()
         ensure_tables_and_indexes(engine)
     except Exception as e:
-        logger.error(f"❌ Fallo al conectar o inicializar la base de datos: {e}")
+        logger.error(f"Fallo al conectar o inicializar la base de datos: {e}")
         return
 
     # Para procesar todos los períodos, usa esta línea en su lugar:
     periods = generate_monthly_periods(2019, 1)
     
-    logger.info(f"ℹ️ Periodos a procesar: {len(periods)}")
+    logger.info(f"Periodos a procesar: {len(periods)}")
 
     total_processed = 0
     total_items = 0
@@ -498,10 +501,10 @@ def main():
 
     for i, p in enumerate(periods, start=1):
         logger.info("\n" + "="*60)
-        logger.info(f"📆 Procesando período {i}/{len(periods)}: {p['label']}  (date param: {p['date_param']})")
+        logger.info(f"Procesando período {i}/{len(periods)}: {p['label']}  (date param: {p['date_param']})")
         try:
             liqs = get_all_liquidaciones_data(base_url, token, p['date_param'])
-            logger.info(f"   ℹ️ Liquidaciones obtenidas: {len(liqs)}")
+            logger.info(f"   Liquidaciones obtenidas: {len(liqs)}")
 
             flat_rows = [flatten_liquidation(l) for l in liqs]
             df_liqs = pd.DataFrame(flat_rows)
@@ -509,10 +512,10 @@ def main():
             inserted = save_payrolls_batch_fixed(engine, df_liqs)
             total_processed += inserted
 
-            # ➡️ MEJORA: Verificar inserción inmediatamente
+            #  MEJORA: Verificar inserción inmediatamente
             verification_result = verify_data_insertion(engine, p['year'], p['month'])
             if not verification_result:
-                logger.error(f"   ❌ ADVERTENCIA: La verificación de datos para {p['label']} falló.")
+                logger.error(f"   ADVERTENCIA: La verificación de datos para {p['label']} falló.")
 
             items = explode_items_for_month(liqs)
             df_items = pd.DataFrame(items)
@@ -522,7 +525,7 @@ def main():
             time.sleep(0.3)
 
         except Exception as e:
-            logger.error(f"   ❌ Falló procesamiento para periodo {p['label']}: {e}")
+            logger.error(f"   Falló procesamiento para periodo {p['label']}: {e}")
             logger.error(f"   Traceback: {traceback.format_exc()}")
             failed_periods.append({"period": p['label'], "error": str(e)})
             continue
@@ -536,5 +539,15 @@ def main():
         for f in failed_periods:
             logger.warning(f" - {f['period']}: {f['error']}")
 
+#%%
 if __name__ == "__main__":
+    print("SISTEMA DE SINCRONIZACIÓN DE empleados - MODO PROGRAMADOR DE TAREAS")
+    print("="*70)
+
+    print("Ejecutando sincronización programada...")
     main()
+    
+    print("Tarea completada. El script finalizará automáticamente.")
+    print("La próxima ejecución será programada por Windows.")
+
+    sys.exit(0)

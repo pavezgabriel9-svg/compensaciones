@@ -807,3 +807,523 @@
 2025-09-06 19:45:30 - INFO - PROCESO FINALIZADO
 2025-09-06 19:45:30 - INFO - Total liquidaciones procesadas (aprox insertadas/actualizadas): 35680
 2025-09-06 19:45:30 - INFO - Total items procesados (aprox insertados): 522382
+2025-09-08 15:42:01 - INFO - ========== INICIANDO PROCESO ETL DE LIQUIDACIONES ==========
+2025-09-08 15:42:01 - INFO - 
+============================================================
+2025-09-08 15:42:19 - INFO - 
+============================================================
+2025-09-08 15:42:36 - INFO - 
+============================================================
+2025-09-08 15:42:51 - INFO - 
+============================================================
+2025-09-08 15:43:04 - INFO - 
+============================================================
+2025-09-08 15:43:19 - INFO - 
+============================================================
+2025-09-08 15:43:38 - INFO - 
+============================================================
+2025-09-08 15:43:52 - INFO - 
+============================================================
+2025-09-08 15:44:08 - INFO - 
+============================================================
+2025-09-08 15:44:26 - INFO - 
+============================================================
+2025-09-08 15:44:45 - INFO - 
+============================================================
+2025-09-08 15:44:59 - INFO - 
+============================================================
+2025-09-08 15:45:14 - INFO - 
+============================================================
+2025-09-08 15:49:25 - INFO - ========== INICIANDO PROCESO ETL DE LIQUIDACIONES ==========
+2025-09-08 15:49:25 - INFO - Periodos a procesar: 81
+2025-09-08 15:49:25 - INFO - 
+============================================================
+2025-09-08 15:49:25 - INFO - Procesando período 1/81: 01-2019  (date param: 01-01-2019)
+2025-09-08 15:49:40 - INFO -    Liquidaciones obtenidas: 386
+2025-09-08 15:49:41 - INFO -    Insertados/actualizados: 386 filas en historical_settlements
+2025-09-08 15:49:41 - INFO -    Insertados: 5871 filas en historical_settlement_items
+2025-09-08 15:49:42 - INFO - 
+============================================================
+2025-09-08 15:49:42 - INFO - Procesando período 2/81: 02-2019  (date param: 01-02-2019)
+2025-09-08 15:49:57 - INFO -    Liquidaciones obtenidas: 388
+2025-09-08 15:49:58 - INFO -    Insertados/actualizados: 388 filas en historical_settlements
+2025-09-08 15:49:58 - INFO -    Insertados: 5439 filas en historical_settlement_items
+2025-09-08 15:49:58 - INFO - 
+============================================================
+2025-09-08 15:49:58 - INFO - Procesando período 3/81: 03-2019  (date param: 01-03-2019)
+2025-09-08 15:50:12 - INFO -    Liquidaciones obtenidas: 385
+2025-09-08 15:50:12 - INFO -    Insertados/actualizados: 385 filas en historical_settlements
+2025-09-08 15:50:13 - INFO -    Insertados: 5025 filas en historical_settlement_items
+2025-09-08 15:50:13 - INFO - 
+============================================================
+2025-09-08 15:50:13 - INFO - Procesando período 4/81: 04-2019  (date param: 01-04-2019)
+2025-09-08 15:50:27 - INFO -    Liquidaciones obtenidas: 386
+2025-09-08 15:50:28 - INFO -    Insertados/actualizados: 386 filas en historical_settlements
+2025-09-08 15:50:28 - INFO -    Insertados: 5068 filas en historical_settlement_items
+2025-09-08 15:50:28 - INFO - 
+============================================================
+2025-09-08 15:50:28 - INFO - Procesando período 5/81: 05-2019  (date param: 01-05-2019)
+2025-09-08 15:50:40 - INFO -    Liquidaciones obtenidas: 385
+2025-09-08 15:50:40 - INFO -    Insertados/actualizados: 385 filas en historical_settlements
+2025-09-08 15:50:41 - INFO -    Insertados: 5035 filas en historical_settlement_items
+2025-09-08 15:50:41 - INFO - 
+============================================================
+2025-09-08 15:50:41 - INFO - Procesando período 6/81: 06-2019  (date param: 01-06-2019)
+2025-09-08 15:50:53 - INFO -    Liquidaciones obtenidas: 384
+2025-09-08 15:50:53 - INFO -    Insertados/actualizados: 384 filas en historical_settlements
+2025-09-08 15:50:53 - INFO -    Insertados: 4928 filas en historical_settlement_items
+2025-09-08 15:50:54 - INFO - 
+============================================================
+2025-09-08 15:50:54 - INFO - Procesando período 7/81: 07-2019  (date param: 01-07-2019)
+2025-09-08 15:51:07 - INFO -    Liquidaciones obtenidas: 383
+2025-09-08 15:51:07 - INFO -    Insertados/actualizados: 383 filas en historical_settlements
+2025-09-08 15:51:08 - INFO -    Insertados: 4978 filas en historical_settlement_items
+2025-09-08 15:51:08 - INFO - 
+============================================================
+2025-09-08 15:51:08 - INFO - Procesando período 8/81: 08-2019  (date param: 01-08-2019)
+2025-09-08 15:51:22 - INFO -    Liquidaciones obtenidas: 385
+2025-09-08 15:51:22 - INFO -    Insertados/actualizados: 385 filas en historical_settlements
+2025-09-08 15:51:23 - INFO -    Insertados: 4820 filas en historical_settlement_items
+2025-09-08 15:51:23 - INFO - 
+============================================================
+2025-09-08 15:51:23 - INFO - Procesando período 9/81: 09-2019  (date param: 01-09-2019)
+2025-09-08 15:51:36 - INFO -    Liquidaciones obtenidas: 385
+2025-09-08 15:51:37 - INFO -    Insertados/actualizados: 385 filas en historical_settlements
+2025-09-08 15:51:38 - INFO -    Insertados: 5715 filas en historical_settlement_items
+2025-09-08 15:51:38 - INFO - 
+============================================================
+2025-09-08 15:51:38 - INFO - Procesando período 10/81: 10-2019  (date param: 01-10-2019)
+2025-09-08 15:51:51 - INFO -    Liquidaciones obtenidas: 389
+2025-09-08 15:51:52 - INFO -    Insertados/actualizados: 389 filas en historical_settlements
+2025-09-08 15:51:52 - INFO -    Insertados: 4898 filas en historical_settlement_items
+2025-09-08 15:51:53 - INFO - 
+============================================================
+2025-09-08 15:51:53 - INFO - Procesando período 11/81: 11-2019  (date param: 01-11-2019)
+2025-09-08 15:52:08 - INFO -    Liquidaciones obtenidas: 390
+2025-09-08 15:52:09 - INFO -    Insertados/actualizados: 390 filas en historical_settlements
+2025-09-08 15:52:09 - INFO -    Insertados: 5032 filas en historical_settlement_items
+2025-09-08 15:52:09 - INFO - 
+============================================================
+2025-09-08 15:52:09 - INFO - Procesando período 12/81: 12-2019  (date param: 01-12-2019)
+2025-09-08 15:52:30 - INFO -    Liquidaciones obtenidas: 389
+2025-09-08 15:52:31 - INFO -    Insertados/actualizados: 389 filas en historical_settlements
+2025-09-08 15:52:31 - INFO -    Insertados: 6156 filas en historical_settlement_items
+2025-09-08 15:52:32 - INFO - 
+============================================================
+2025-09-08 15:52:32 - INFO - Procesando período 13/81: 01-2020  (date param: 01-01-2020)
+2025-09-08 15:52:43 - INFO -    Liquidaciones obtenidas: 391
+2025-09-08 15:52:44 - INFO -    Insertados/actualizados: 391 filas en historical_settlements
+2025-09-08 15:52:44 - INFO -    Insertados: 5633 filas en historical_settlement_items
+2025-09-08 15:52:45 - INFO - 
+============================================================
+2025-09-08 15:52:45 - INFO - Procesando período 14/81: 02-2020  (date param: 01-02-2020)
+2025-09-08 15:52:58 - INFO -    Liquidaciones obtenidas: 396
+2025-09-08 15:52:59 - INFO -    Insertados/actualizados: 396 filas en historical_settlements
+2025-09-08 15:52:59 - INFO -    Insertados: 5445 filas en historical_settlement_items
+2025-09-08 15:52:59 - INFO - 
+============================================================
+2025-09-08 15:52:59 - INFO - Procesando período 15/81: 03-2020  (date param: 01-03-2020)
+2025-09-08 15:53:14 - INFO -    Liquidaciones obtenidas: 391
+2025-09-08 15:53:15 - INFO -    Insertados/actualizados: 391 filas en historical_settlements
+2025-09-08 15:53:15 - INFO -    Insertados: 5096 filas en historical_settlement_items
+2025-09-08 15:53:16 - INFO - 
+============================================================
+2025-09-08 15:53:16 - INFO - Procesando período 16/81: 04-2020  (date param: 01-04-2020)
+2025-09-08 15:53:40 - INFO -    Liquidaciones obtenidas: 394
+2025-09-08 15:53:40 - INFO -    Insertados/actualizados: 394 filas en historical_settlements
+2025-09-08 15:53:41 - INFO -    Insertados: 5184 filas en historical_settlement_items
+2025-09-08 15:53:41 - INFO - 
+============================================================
+2025-09-08 15:53:41 - INFO - Procesando período 17/81: 05-2020  (date param: 01-05-2020)
+2025-09-08 15:53:58 - INFO -    Liquidaciones obtenidas: 394
+2025-09-08 15:53:59 - INFO -    Insertados/actualizados: 394 filas en historical_settlements
+2025-09-08 15:54:00 - INFO -    Insertados: 5023 filas en historical_settlement_items
+2025-09-08 15:54:00 - INFO - 
+============================================================
+2025-09-08 15:54:00 - INFO - Procesando período 18/81: 06-2020  (date param: 01-06-2020)
+2025-09-08 15:54:15 - INFO -    Liquidaciones obtenidas: 385
+2025-09-08 15:54:16 - INFO -    Insertados/actualizados: 385 filas en historical_settlements
+2025-09-08 15:54:16 - INFO -    Insertados: 4961 filas en historical_settlement_items
+2025-09-08 15:54:17 - INFO - 
+============================================================
+2025-09-08 15:54:17 - INFO - Procesando período 19/81: 07-2020  (date param: 01-07-2020)
+2025-09-08 15:54:31 - INFO -    Liquidaciones obtenidas: 382
+2025-09-08 15:54:32 - INFO -    Insertados/actualizados: 382 filas en historical_settlements
+2025-09-08 15:54:32 - INFO -    Insertados: 4958 filas en historical_settlement_items
+2025-09-08 15:54:32 - INFO - 
+============================================================
+2025-09-08 15:54:32 - INFO - Procesando período 20/81: 08-2020  (date param: 01-08-2020)
+2025-09-08 15:54:47 - INFO -    Liquidaciones obtenidas: 379
+2025-09-08 15:54:48 - INFO -    Insertados/actualizados: 379 filas en historical_settlements
+2025-09-08 15:54:48 - INFO -    Insertados: 4948 filas en historical_settlement_items
+2025-09-08 15:54:48 - INFO - 
+============================================================
+2025-09-08 15:54:48 - INFO - Procesando período 21/81: 09-2020  (date param: 01-09-2020)
+2025-09-08 15:55:05 - INFO -    Liquidaciones obtenidas: 383
+2025-09-08 15:55:06 - INFO -    Insertados/actualizados: 383 filas en historical_settlements
+2025-09-08 15:55:07 - INFO -    Insertados: 5891 filas en historical_settlement_items
+2025-09-08 15:55:07 - INFO - 
+============================================================
+2025-09-08 15:55:07 - INFO - Procesando período 22/81: 10-2020  (date param: 01-10-2020)
+2025-09-08 15:55:20 - INFO -    Liquidaciones obtenidas: 386
+2025-09-08 15:55:21 - INFO -    Insertados/actualizados: 386 filas en historical_settlements
+2025-09-08 15:55:22 - INFO -    Insertados: 4990 filas en historical_settlement_items
+2025-09-08 15:55:22 - INFO - 
+============================================================
+2025-09-08 15:55:22 - INFO - Procesando período 23/81: 11-2020  (date param: 01-11-2020)
+2025-09-08 15:55:37 - INFO -    Liquidaciones obtenidas: 389
+2025-09-08 15:55:37 - INFO -    Insertados/actualizados: 389 filas en historical_settlements
+2025-09-08 15:55:38 - INFO -    Insertados: 4984 filas en historical_settlement_items
+2025-09-08 15:55:38 - INFO - 
+============================================================
+2025-09-08 15:55:38 - INFO - Procesando período 24/81: 12-2020  (date param: 01-12-2020)
+2025-09-08 15:55:52 - INFO -    Liquidaciones obtenidas: 393
+2025-09-08 15:55:53 - INFO -    Insertados/actualizados: 393 filas en historical_settlements
+2025-09-08 15:55:54 - INFO -    Insertados: 6278 filas en historical_settlement_items
+2025-09-08 15:55:54 - INFO - 
+============================================================
+2025-09-08 15:55:54 - INFO - Procesando período 25/81: 01-2021  (date param: 01-01-2021)
+2025-09-08 15:56:06 - INFO -    Liquidaciones obtenidas: 408
+2025-09-08 15:56:07 - INFO -    Insertados/actualizados: 408 filas en historical_settlements
+2025-09-08 15:56:08 - INFO -    Insertados: 5685 filas en historical_settlement_items
+2025-09-08 15:56:08 - INFO - 
+============================================================
+2025-09-08 15:56:08 - INFO - Procesando período 26/81: 02-2021  (date param: 01-02-2021)
+2025-09-08 15:56:24 - INFO -    Liquidaciones obtenidas: 415
+2025-09-08 15:56:25 - INFO -    Insertados/actualizados: 415 filas en historical_settlements
+2025-09-08 15:56:26 - INFO -    Insertados: 5742 filas en historical_settlement_items
+2025-09-08 15:56:26 - INFO - 
+============================================================
+2025-09-08 15:56:26 - INFO - Procesando período 27/81: 03-2021  (date param: 01-03-2021)
+2025-09-08 15:56:46 - INFO -    Liquidaciones obtenidas: 425
+2025-09-08 15:56:46 - INFO -    Insertados/actualizados: 425 filas en historical_settlements
+2025-09-08 15:56:47 - INFO -    Insertados: 5702 filas en historical_settlement_items
+2025-09-08 15:56:47 - INFO - 
+============================================================
+2025-09-08 15:56:47 - INFO - Procesando período 28/81: 04-2021  (date param: 01-04-2021)
+2025-09-08 15:57:03 - INFO -    Liquidaciones obtenidas: 433
+2025-09-08 15:57:04 - INFO -    Insertados/actualizados: 433 filas en historical_settlements
+2025-09-08 15:57:05 - INFO -    Insertados: 5601 filas en historical_settlement_items
+2025-09-08 15:57:05 - INFO - 
+============================================================
+2025-09-08 15:57:05 - INFO - Procesando período 29/81: 05-2021  (date param: 01-05-2021)
+2025-09-08 15:57:21 - INFO -    Liquidaciones obtenidas: 437
+2025-09-08 15:57:22 - INFO -    Insertados/actualizados: 437 filas en historical_settlements
+2025-09-08 15:57:22 - INFO -    Insertados: 5384 filas en historical_settlement_items
+2025-09-08 15:57:23 - INFO - 
+============================================================
+2025-09-08 15:57:23 - INFO - Procesando período 30/81: 06-2021  (date param: 01-06-2021)
+2025-09-08 15:57:36 - INFO -    Liquidaciones obtenidas: 432
+2025-09-08 15:57:37 - INFO -    Insertados/actualizados: 432 filas en historical_settlements
+2025-09-08 15:57:38 - INFO -    Insertados: 5355 filas en historical_settlement_items
+2025-09-08 15:57:38 - INFO - 
+============================================================
+2025-09-08 15:57:38 - INFO - Procesando período 31/81: 07-2021  (date param: 01-07-2021)
+2025-09-08 15:58:07 - INFO -    Liquidaciones obtenidas: 432
+2025-09-08 15:58:08 - INFO -    Insertados/actualizados: 432 filas en historical_settlements
+2025-09-08 15:58:09 - INFO -    Insertados: 5341 filas en historical_settlement_items
+2025-09-08 15:58:09 - INFO - 
+============================================================
+2025-09-08 15:58:09 - INFO - Procesando período 32/81: 08-2021  (date param: 01-08-2021)
+2025-09-08 15:58:22 - INFO -    Liquidaciones obtenidas: 443
+2025-09-08 15:58:23 - INFO -    Insertados/actualizados: 443 filas en historical_settlements
+2025-09-08 15:58:24 - INFO -    Insertados: 5430 filas en historical_settlement_items
+2025-09-08 15:58:24 - INFO - 
+============================================================
+2025-09-08 15:58:24 - INFO - Procesando período 33/81: 09-2021  (date param: 01-09-2021)
+2025-09-08 15:58:41 - INFO -    Liquidaciones obtenidas: 450
+2025-09-08 15:58:42 - INFO -    Insertados/actualizados: 450 filas en historical_settlements
+2025-09-08 15:58:43 - INFO -    Insertados: 6413 filas en historical_settlement_items
+2025-09-08 15:58:43 - INFO - 
+============================================================
+2025-09-08 15:58:43 - INFO - Procesando período 34/81: 10-2021  (date param: 01-10-2021)
+2025-09-08 15:58:59 - INFO -    Liquidaciones obtenidas: 451
+2025-09-08 15:59:00 - INFO -    Insertados/actualizados: 451 filas en historical_settlements
+2025-09-08 15:59:00 - INFO -    Insertados: 5668 filas en historical_settlement_items
+2025-09-08 15:59:01 - INFO - 
+============================================================
+2025-09-08 15:59:01 - INFO - Procesando período 35/81: 11-2021  (date param: 01-11-2021)
+2025-09-08 15:59:16 - INFO -    Liquidaciones obtenidas: 452
+2025-09-08 15:59:16 - INFO -    Insertados/actualizados: 452 filas en historical_settlements
+2025-09-08 15:59:17 - INFO -    Insertados: 5620 filas en historical_settlement_items
+2025-09-08 15:59:17 - INFO - 
+============================================================
+2025-09-08 15:59:17 - INFO - Procesando período 36/81: 12-2021  (date param: 01-12-2021)
+2025-09-08 15:59:35 - INFO -    Liquidaciones obtenidas: 447
+2025-09-08 15:59:36 - INFO -    Insertados/actualizados: 447 filas en historical_settlements
+2025-09-08 15:59:37 - INFO -    Insertados: 7313 filas en historical_settlement_items
+2025-09-08 15:59:37 - INFO - 
+============================================================
+2025-09-08 15:59:37 - INFO - Procesando período 37/81: 01-2022  (date param: 01-01-2022)
+2025-09-08 15:59:54 - INFO -    Liquidaciones obtenidas: 446
+2025-09-08 15:59:55 - INFO -    Insertados/actualizados: 446 filas en historical_settlements
+2025-09-08 15:59:56 - INFO -    Insertados: 7062 filas en historical_settlement_items
+2025-09-08 15:59:56 - INFO - 
+============================================================
+2025-09-08 15:59:56 - INFO - Procesando período 38/81: 02-2022  (date param: 01-02-2022)
+2025-09-08 16:00:12 - INFO -    Liquidaciones obtenidas: 449
+2025-09-08 16:00:13 - INFO -    Insertados/actualizados: 449 filas en historical_settlements
+2025-09-08 16:00:14 - INFO -    Insertados: 7036 filas en historical_settlement_items
+2025-09-08 16:00:14 - INFO - 
+============================================================
+2025-09-08 16:00:14 - INFO - Procesando período 39/81: 03-2022  (date param: 01-03-2022)
+2025-09-08 16:00:35 - INFO -    Liquidaciones obtenidas: 453
+2025-09-08 16:00:36 - INFO -    Insertados/actualizados: 453 filas en historical_settlements
+2025-09-08 16:00:36 - INFO -    Insertados: 6307 filas en historical_settlement_items
+2025-09-08 16:00:37 - INFO - 
+============================================================
+2025-09-08 16:00:37 - INFO - Procesando período 40/81: 04-2022  (date param: 01-04-2022)
+2025-09-08 16:00:55 - INFO -    Liquidaciones obtenidas: 444
+2025-09-08 16:00:55 - INFO -    Insertados/actualizados: 444 filas en historical_settlements
+2025-09-08 16:00:56 - INFO -    Insertados: 6112 filas en historical_settlement_items
+2025-09-08 16:00:56 - INFO - 
+============================================================
+2025-09-08 16:00:56 - INFO - Procesando período 41/81: 05-2022  (date param: 01-05-2022)
+2025-09-08 16:01:26 - INFO -    Liquidaciones obtenidas: 443
+2025-09-08 16:01:27 - INFO -    Insertados/actualizados: 443 filas en historical_settlements
+2025-09-08 16:01:27 - INFO -    Insertados: 5961 filas en historical_settlement_items
+2025-09-08 16:01:28 - INFO - 
+============================================================
+2025-09-08 16:01:28 - INFO - Procesando período 42/81: 06-2022  (date param: 01-06-2022)
+2025-09-08 16:01:49 - INFO -    Liquidaciones obtenidas: 447
+2025-09-08 16:01:50 - INFO -    Insertados/actualizados: 447 filas en historical_settlements
+2025-09-08 16:01:50 - INFO -    Insertados: 5982 filas en historical_settlement_items
+2025-09-08 16:01:50 - INFO - 
+============================================================
+2025-09-08 16:01:50 - INFO - Procesando período 43/81: 07-2022  (date param: 01-07-2022)
+2025-09-08 16:02:13 - INFO -    Liquidaciones obtenidas: 438
+2025-09-08 16:02:13 - INFO -    Insertados/actualizados: 438 filas en historical_settlements
+2025-09-08 16:02:14 - INFO -    Insertados: 5882 filas en historical_settlement_items
+2025-09-08 16:02:14 - INFO - 
+============================================================
+2025-09-08 16:02:14 - INFO - Procesando período 44/81: 08-2022  (date param: 01-08-2022)
+2025-09-08 16:02:32 - INFO -    Liquidaciones obtenidas: 436
+2025-09-08 16:02:33 - INFO -    Insertados/actualizados: 436 filas en historical_settlements
+2025-09-08 16:02:34 - INFO -    Insertados: 5947 filas en historical_settlement_items
+2025-09-08 16:02:34 - INFO - 
+============================================================
+2025-09-08 16:02:34 - INFO - Procesando período 45/81: 09-2022  (date param: 01-09-2022)
+2025-09-08 16:02:58 - INFO -    Liquidaciones obtenidas: 434
+2025-09-08 16:02:59 - INFO -    Insertados/actualizados: 434 filas en historical_settlements
+2025-09-08 16:03:00 - INFO -    Insertados: 7217 filas en historical_settlement_items
+2025-09-08 16:03:00 - INFO - 
+============================================================
+2025-09-08 16:03:00 - INFO - Procesando período 46/81: 10-2022  (date param: 01-10-2022)
+2025-09-08 16:03:19 - INFO -    Liquidaciones obtenidas: 434
+2025-09-08 16:03:20 - INFO -    Insertados/actualizados: 434 filas en historical_settlements
+2025-09-08 16:03:20 - INFO -    Insertados: 6148 filas en historical_settlement_items
+2025-09-08 16:03:21 - INFO - 
+============================================================
+2025-09-08 16:03:21 - INFO - Procesando período 47/81: 11-2022  (date param: 01-11-2022)
+2025-09-08 16:03:36 - INFO -    Liquidaciones obtenidas: 437
+2025-09-08 16:03:37 - INFO -    Insertados/actualizados: 437 filas en historical_settlements
+2025-09-08 16:03:38 - INFO -    Insertados: 6260 filas en historical_settlement_items
+2025-09-08 16:03:38 - INFO - 
+============================================================
+2025-09-08 16:03:38 - INFO - Procesando período 48/81: 12-2022  (date param: 01-12-2022)
+2025-09-08 16:03:59 - INFO -    Liquidaciones obtenidas: 442
+2025-09-08 16:04:00 - INFO -    Insertados/actualizados: 442 filas en historical_settlements
+2025-09-08 16:04:00 - INFO -    Insertados: 8616 filas en historical_settlement_items
+2025-09-08 16:04:01 - INFO - 
+============================================================
+2025-09-08 16:04:01 - INFO - Procesando período 49/81: 01-2023  (date param: 01-01-2023)
+2025-09-08 16:04:20 - INFO -    Liquidaciones obtenidas: 442
+2025-09-08 16:04:21 - INFO -    Insertados/actualizados: 442 filas en historical_settlements
+2025-09-08 16:04:22 - INFO -    Insertados: 6746 filas en historical_settlement_items
+2025-09-08 16:04:22 - INFO - 
+============================================================
+2025-09-08 16:04:22 - INFO - Procesando período 50/81: 02-2023  (date param: 01-02-2023)
+2025-09-08 16:04:42 - INFO -    Liquidaciones obtenidas: 447
+2025-09-08 16:04:43 - INFO -    Insertados/actualizados: 447 filas en historical_settlements
+2025-09-08 16:04:44 - INFO -    Insertados: 7065 filas en historical_settlement_items
+2025-09-08 16:04:44 - INFO - 
+============================================================
+2025-09-08 16:04:44 - INFO - Procesando período 51/81: 03-2023  (date param: 01-03-2023)
+2025-09-08 16:05:12 - INFO -    Liquidaciones obtenidas: 440
+2025-09-08 16:05:13 - INFO -    Insertados/actualizados: 440 filas en historical_settlements
+2025-09-08 16:05:14 - INFO -    Insertados: 6577 filas en historical_settlement_items
+2025-09-08 16:05:14 - INFO - 
+============================================================
+2025-09-08 16:05:14 - INFO - Procesando período 52/81: 04-2023  (date param: 01-04-2023)
+2025-09-08 16:05:41 - INFO -    Liquidaciones obtenidas: 443
+2025-09-08 16:05:42 - INFO -    Insertados/actualizados: 443 filas en historical_settlements
+2025-09-08 16:05:43 - INFO -    Insertados: 6556 filas en historical_settlement_items
+2025-09-08 16:05:43 - INFO - 
+============================================================
+2025-09-08 16:05:43 - INFO - Procesando período 53/81: 05-2023  (date param: 01-05-2023)
+2025-09-08 16:06:09 - INFO -    Liquidaciones obtenidas: 451
+2025-09-08 16:06:10 - INFO -    Insertados/actualizados: 451 filas en historical_settlements
+2025-09-08 16:06:11 - INFO -    Insertados: 7023 filas en historical_settlement_items
+2025-09-08 16:06:11 - INFO - 
+============================================================
+2025-09-08 16:06:11 - INFO - Procesando período 54/81: 06-2023  (date param: 01-06-2023)
+2025-09-08 16:06:28 - INFO -    Liquidaciones obtenidas: 453
+2025-09-08 16:06:29 - INFO -    Insertados/actualizados: 453 filas en historical_settlements
+2025-09-08 16:06:29 - INFO -    Insertados: 6794 filas en historical_settlement_items
+2025-09-08 16:06:30 - INFO - 
+============================================================
+2025-09-08 16:06:30 - INFO - Procesando período 55/81: 07-2023  (date param: 01-07-2023)
+2025-09-08 16:06:52 - INFO -    Liquidaciones obtenidas: 455
+2025-09-08 16:06:53 - INFO -    Insertados/actualizados: 455 filas en historical_settlements
+2025-09-08 16:06:53 - INFO -    Insertados: 6854 filas en historical_settlement_items
+2025-09-08 16:06:54 - INFO - 
+============================================================
+2025-09-08 16:06:54 - INFO - Procesando período 56/81: 08-2023  (date param: 01-08-2023)
+2025-09-08 16:07:12 - INFO -    Liquidaciones obtenidas: 459
+2025-09-08 16:07:13 - INFO -    Insertados/actualizados: 459 filas en historical_settlements
+2025-09-08 16:07:13 - INFO -    Insertados: 6840 filas en historical_settlement_items
+2025-09-08 16:07:14 - INFO - 
+============================================================
+2025-09-08 16:07:14 - INFO - Procesando período 57/81: 09-2023  (date param: 01-09-2023)
+2025-09-08 16:07:43 - INFO -    Liquidaciones obtenidas: 460
+2025-09-08 16:07:44 - INFO -    Insertados/actualizados: 460 filas en historical_settlements
+2025-09-08 16:07:45 - INFO -    Insertados: 8121 filas en historical_settlement_items
+2025-09-08 16:07:45 - INFO - 
+============================================================
+2025-09-08 16:07:45 - INFO - Procesando período 58/81: 10-2023  (date param: 01-10-2023)
+2025-09-08 16:08:16 - INFO -    Liquidaciones obtenidas: 465
+2025-09-08 16:08:17 - INFO -    Insertados/actualizados: 465 filas en historical_settlements
+2025-09-08 16:08:18 - INFO -    Insertados: 7021 filas en historical_settlement_items
+2025-09-08 16:08:18 - INFO - 
+============================================================
+2025-09-08 16:08:18 - INFO - Procesando período 59/81: 11-2023  (date param: 01-11-2023)
+2025-09-08 16:08:46 - INFO -    Liquidaciones obtenidas: 473
+2025-09-08 16:08:47 - INFO -    Insertados/actualizados: 473 filas en historical_settlements
+2025-09-08 16:08:47 - INFO -    Insertados: 7185 filas en historical_settlement_items
+2025-09-08 16:08:48 - INFO - 
+============================================================
+2025-09-08 16:08:48 - INFO - Procesando período 60/81: 12-2023  (date param: 01-12-2023)
+2025-09-08 16:09:20 - INFO -    Liquidaciones obtenidas: 470
+2025-09-08 16:09:21 - INFO -    Insertados/actualizados: 470 filas en historical_settlements
+2025-09-08 16:09:22 - INFO -    Insertados: 9036 filas en historical_settlement_items
+2025-09-08 16:09:22 - INFO - 
+============================================================
+2025-09-08 16:09:22 - INFO - Procesando período 61/81: 01-2024  (date param: 01-01-2024)
+2025-09-08 16:09:57 - INFO -    Liquidaciones obtenidas: 473
+2025-09-08 16:09:58 - INFO -    Insertados/actualizados: 473 filas en historical_settlements
+2025-09-08 16:09:59 - INFO -    Insertados: 7170 filas en historical_settlement_items
+2025-09-08 16:09:59 - INFO - 
+============================================================
+2025-09-08 16:09:59 - INFO - Procesando período 62/81: 02-2024  (date param: 01-02-2024)
+2025-09-08 16:10:18 - INFO -    Liquidaciones obtenidas: 475
+2025-09-08 16:10:20 - INFO -    Insertados/actualizados: 475 filas en historical_settlements
+2025-09-08 16:10:20 - INFO -    Insertados: 7474 filas en historical_settlement_items
+2025-09-08 16:10:21 - INFO - 
+============================================================
+2025-09-08 16:10:21 - INFO - Procesando período 63/81: 03-2024  (date param: 01-03-2024)
+2025-09-08 16:10:55 - INFO -    Liquidaciones obtenidas: 474
+2025-09-08 16:10:56 - INFO -    Insertados/actualizados: 474 filas en historical_settlements
+2025-09-08 16:10:57 - INFO -    Insertados: 7085 filas en historical_settlement_items
+2025-09-08 16:10:57 - INFO - 
+============================================================
+2025-09-08 16:10:57 - INFO - Procesando período 64/81: 04-2024  (date param: 01-04-2024)
+2025-09-08 16:11:21 - INFO -    Liquidaciones obtenidas: 486
+2025-09-08 16:11:22 - INFO -    Insertados/actualizados: 486 filas en historical_settlements
+2025-09-08 16:11:22 - INFO -    Insertados: 7244 filas en historical_settlement_items
+2025-09-08 16:11:23 - INFO - 
+============================================================
+2025-09-08 16:11:23 - INFO - Procesando período 65/81: 05-2024  (date param: 01-05-2024)
+2025-09-08 16:11:42 - INFO -    Liquidaciones obtenidas: 490
+2025-09-08 16:11:43 - INFO -    Insertados/actualizados: 490 filas en historical_settlements
+2025-09-08 16:11:44 - INFO -    Insertados: 7259 filas en historical_settlement_items
+2025-09-08 16:11:44 - INFO - 
+============================================================
+2025-09-08 16:11:44 - INFO - Procesando período 66/81: 06-2024  (date param: 01-06-2024)
+2025-09-08 16:12:12 - INFO -    Liquidaciones obtenidas: 495
+2025-09-08 16:12:13 - INFO -    Insertados/actualizados: 495 filas en historical_settlements
+2025-09-08 16:12:14 - INFO -    Insertados: 7353 filas en historical_settlement_items
+2025-09-08 16:12:15 - INFO - 
+============================================================
+2025-09-08 16:12:15 - INFO - Procesando período 67/81: 07-2024  (date param: 01-07-2024)
+2025-09-08 16:12:40 - INFO -    Liquidaciones obtenidas: 500
+2025-09-08 16:12:41 - INFO -    Insertados/actualizados: 500 filas en historical_settlements
+2025-09-08 16:12:41 - INFO -    Insertados: 7423 filas en historical_settlement_items
+2025-09-08 16:12:41 - INFO - 
+============================================================
+2025-09-08 16:12:41 - INFO - Procesando período 68/81: 08-2024  (date param: 01-08-2024)
+2025-09-08 16:12:59 - INFO -    Liquidaciones obtenidas: 505
+2025-09-08 16:13:00 - INFO -    Insertados/actualizados: 505 filas en historical_settlements
+2025-09-08 16:13:01 - INFO -    Insertados: 7528 filas en historical_settlement_items
+2025-09-08 16:13:01 - INFO - 
+============================================================
+2025-09-08 16:13:01 - INFO - Procesando período 69/81: 09-2024  (date param: 01-09-2024)
+2025-09-08 16:13:25 - INFO -    Liquidaciones obtenidas: 516
+2025-09-08 16:13:26 - INFO -    Insertados/actualizados: 516 filas en historical_settlements
+2025-09-08 16:13:27 - INFO -    Insertados: 8922 filas en historical_settlement_items
+2025-09-08 16:13:27 - INFO - 
+============================================================
+2025-09-08 16:13:27 - INFO - Procesando período 70/81: 10-2024  (date param: 01-10-2024)
+2025-09-08 16:13:55 - INFO -    Liquidaciones obtenidas: 513
+2025-09-08 16:13:56 - INFO -    Insertados/actualizados: 513 filas en historical_settlements
+2025-09-08 16:13:57 - INFO -    Insertados: 7763 filas en historical_settlement_items
+2025-09-08 16:13:57 - INFO - 
+============================================================
+2025-09-08 16:13:57 - INFO - Procesando período 71/81: 11-2024  (date param: 01-11-2024)
+2025-09-08 16:14:20 - INFO -    Liquidaciones obtenidas: 520
+2025-09-08 16:14:21 - INFO -    Insertados/actualizados: 520 filas en historical_settlements
+2025-09-08 16:14:22 - INFO -    Insertados: 8002 filas en historical_settlement_items
+2025-09-08 16:14:22 - INFO - 
+============================================================
+2025-09-08 16:14:22 - INFO - Procesando período 72/81: 12-2024  (date param: 01-12-2024)
+2025-09-08 16:14:41 - INFO -    Liquidaciones obtenidas: 521
+2025-09-08 16:14:42 - INFO -    Insertados/actualizados: 521 filas en historical_settlements
+2025-09-08 16:14:43 - INFO -    Insertados: 10049 filas en historical_settlement_items
+2025-09-08 16:14:43 - INFO - 
+============================================================
+2025-09-08 16:14:43 - INFO - Procesando período 73/81: 01-2025  (date param: 01-01-2025)
+2025-09-08 16:15:09 - INFO -    Liquidaciones obtenidas: 532
+2025-09-08 16:15:10 - INFO -    Insertados/actualizados: 532 filas en historical_settlements
+2025-09-08 16:15:11 - INFO -    Insertados: 8130 filas en historical_settlement_items
+2025-09-08 16:15:11 - INFO - 
+============================================================
+2025-09-08 16:15:11 - INFO - Procesando período 74/81: 02-2025  (date param: 01-02-2025)
+2025-09-08 16:15:29 - INFO -    Liquidaciones obtenidas: 543
+2025-09-08 16:15:30 - INFO -    Insertados/actualizados: 543 filas en historical_settlements
+2025-09-08 16:15:31 - INFO -    Insertados: 9014 filas en historical_settlement_items
+2025-09-08 16:15:31 - INFO - 
+============================================================
+2025-09-08 16:15:31 - INFO - Procesando período 75/81: 03-2025  (date param: 01-03-2025)
+2025-09-08 16:15:54 - INFO -    Liquidaciones obtenidas: 547
+2025-09-08 16:15:56 - INFO -    Insertados/actualizados: 547 filas en historical_settlements
+2025-09-08 16:16:00 - INFO -    Insertados: 8224 filas en historical_settlement_items
+2025-09-08 16:16:00 - INFO - 
+============================================================
+2025-09-08 16:16:00 - INFO - Procesando período 76/81: 04-2025  (date param: 01-04-2025)
+2025-09-08 16:16:21 - INFO -    Liquidaciones obtenidas: 547
+2025-09-08 16:16:22 - INFO -    Insertados/actualizados: 547 filas en historical_settlements
+2025-09-08 16:16:23 - INFO -    Insertados: 8245 filas en historical_settlement_items
+2025-09-08 16:16:24 - INFO - 
+============================================================
+2025-09-08 16:16:24 - INFO - Procesando período 77/81: 05-2025  (date param: 01-05-2025)
+2025-09-08 16:16:48 - INFO -    Liquidaciones obtenidas: 559
+2025-09-08 16:16:49 - INFO -    Insertados/actualizados: 559 filas en historical_settlements
+2025-09-08 16:16:49 - INFO -    Insertados: 8358 filas en historical_settlement_items
+2025-09-08 16:16:50 - INFO - 
+============================================================
+2025-09-08 16:16:50 - INFO - Procesando período 78/81: 06-2025  (date param: 01-06-2025)
+2025-09-08 16:17:16 - INFO -    Liquidaciones obtenidas: 564
+2025-09-08 16:17:17 - INFO -    Insertados/actualizados: 564 filas en historical_settlements
+2025-09-08 16:17:18 - INFO -    Insertados: 8483 filas en historical_settlement_items
+2025-09-08 16:17:18 - INFO - 
+============================================================
+2025-09-08 16:17:18 - INFO - Procesando período 79/81: 07-2025  (date param: 01-07-2025)
+2025-09-08 16:17:39 - INFO -    Liquidaciones obtenidas: 565
+2025-09-08 16:17:40 - INFO -    Insertados/actualizados: 565 filas en historical_settlements
+2025-09-08 16:17:41 - INFO -    Insertados: 8879 filas en historical_settlement_items
+2025-09-08 16:17:41 - INFO - 
+============================================================
+2025-09-08 16:17:41 - INFO - Procesando período 80/81: 08-2025  (date param: 01-08-2025)
+2025-09-08 16:18:15 - INFO -    Liquidaciones obtenidas: 571
+2025-09-08 16:18:17 - INFO -    Insertados/actualizados: 571 filas en historical_settlements
+2025-09-08 16:18:18 - INFO -    Insertados: 9819 filas en historical_settlement_items
+2025-09-08 16:18:18 - INFO - 
+============================================================
+2025-09-08 16:18:18 - INFO - Procesando período 81/81: 09-2025  (date param: 01-09-2025)
+2025-09-08 16:18:41 - INFO -    Liquidaciones obtenidas: 570
+2025-09-08 16:18:42 - INFO -    Insertados/actualizados: 570 filas en historical_settlements
+2025-09-08 16:18:43 - INFO -    Insertados: 8609 filas en historical_settlement_items
+2025-09-08 16:18:43 - INFO - 
+============================================================
+2025-09-08 16:18:43 - INFO - PROCESO FINALIZADO
+2025-09-08 16:18:43 - INFO - Total liquidaciones procesadas (aprox insertadas/actualizadas): 36250
+2025-09-08 16:18:43 - INFO - Total items procesados (aprox insertados): 530991

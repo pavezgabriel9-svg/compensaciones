@@ -1,28 +1,26 @@
 # %%
 import requests
-import os
 import pymysql
 import time
-import json
-import schedule
 import datetime
-from datetime import timedelta
+from datetime import datetime
+import sys
 
 # Configuración API
 URL = "https://cramer.buk.cl/api/v1/chile/employees"
 TOKEN = "Xegy8dVsa1H8SFfojJcwYtDL"
 
 # Configuración BD - Windows
-# DB_HOST = "10.254.33.138"
-# DB_USER = "compensaciones_rrhh"
-# DB_PASSWORD = "_Cramercomp2025_"
-# DB_NAME = "rrhh_app"
+DB_HOST = "10.254.32.110"
+DB_USER = "compensaciones_rrhh"
+DB_PASSWORD = "_Cramercomp2025_"
+DB_NAME = "rrhh_app"
 
 # Configuración BD - Mac
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "cancionanimal"
-DB_NAME = "conexion_buk"
+# DB_HOST = "localhost"
+# DB_USER = "root"
+# DB_PASSWORD = "cancionanimal"
+# DB_NAME = "conexion_buk"
 
 # %%
 def obtener_historial_laboral_completo():
@@ -190,11 +188,18 @@ def job_sincronizar_historial_laboral():
         
     except Exception as e:
         print(f"❌ Error general en la sincronización: {e}")
+    
+    with open('C:/Users/gpavez/Desktop/logs_sync_jobs_employees.txt', 'a') as f:
+        f.write(f"{datetime.now()}: Sincronización completada\n")
 
 # %%
-# PROGRAMACIÓN AUTOMÁTICA
-job_sincronizar_historial_laboral()
-# schedule.every().day.at("09:00").do(job_sincronizar_historial_laboral)
-# while True:
-#     schedule.run_pending()
-#     time.sleep(600)
+if __name__ == "__main__":
+    print("SISTEMA DE SINCRONIZACIÓN DE ÁREAS - MODO PROGRAMADOR DE TAREAS")
+    print("="*70)
+    print("🔍 Ejecutando sincronización programada...")
+    job_sincronizar_historial_laboral()
+
+    print("✅ Tarea completada. El script finalizará automáticamente.")
+    print("La próxima ejecución será programada por Windows.")
+
+    sys.exit(0)
