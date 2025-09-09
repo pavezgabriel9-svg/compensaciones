@@ -11,7 +11,7 @@ URL_AREAS = 'https://cramer.buk.cl/api/v1/chile/organization/areas/?status=both'
 TOKEN = "Xegy8dVsa1H8SFfojJcwYtDL"
 
 # Configuración BD - windows
-DB_HOST = "10.254.32.110"
+DB_HOST = "192.168.245.33"
 DB_USER = "compensaciones_rrhh"
 DB_PASSWORD = "_Cramercomp2025_"
 DB_NAME = "rrhh_app"

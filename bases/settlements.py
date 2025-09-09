@@ -42,7 +42,7 @@ logger.addHandler(handler_file)
 # DB_NAME = "conexion_buk"
 
 # Configuración BD - windows
-DB_HOST = "10.254.32.110"
+DB_HOST = "192.168.245.33"
 DB_USER = "compensaciones_rrhh"
 DB_PASSWORD = "_Cramercomp2025_"
 DB_NAME = "rrhh_app"
