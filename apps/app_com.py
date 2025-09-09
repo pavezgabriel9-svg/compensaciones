@@ -64,22 +64,39 @@ class CompensaViewer:
         try:
             # Query optimizada para obtener datos esenciales
             query = """
-            SELECT DISTINCT e.person_id, e.rut, e.full_name AS Nombre, COALESCE(e.gender, 'N/A') AS Género,
-                e.area_id AS ID_Area_Actual, COALESCE(e.contract_type, 'N/A') AS Tipo_Contrato_Actual,
+            SELECT 
+                e.person_id,
+                e.rut,
+                e.full_name AS Nombre,
+                COALESCE(e.gender, 'N/A') AS Género,
+                e.area_id AS ID_Area,
+                COALESCE(e.contract_type, 'N/A') AS Tipo_Contrato,
                 e.active_since,
-                -- Información del cargo actual
-                (SELECT ej.role_name FROM employees_jobs ej WHERE ej.person_rut = e.rut AND ej.end_date IS NULL ORDER BY ej.start_date DESC LIMIT 1) AS Cargo_Actual,
-                -- Último sueldo base
-                (SELECT ej.base_wage FROM employees_jobs ej WHERE ej.person_rut = e.rut AND ej.base_wage > 0 AND ej.end_date IS NULL ORDER BY ej.start_date DESC LIMIT 1) AS Sueldo_Base,
+
+                -- Historial desde employees_jobs
+                ej.start_date,
+                ej.end_date,
+                ej.role_name AS Cargo_Actual,
+                ej.base_wage AS Sueldo_Base,
+
                 -- Área
                 COALESCE(a.name, CONCAT('Área ', e.area_id)) AS Nombre_Area,
-                -- Jefe actual
-                (SELECT jefe.full_name FROM employees_jobs ej2 LEFT JOIN employees jefe ON ej2.boss_rut = jefe.rut WHERE ej2.person_rut = e.rut AND ej2.end_date IS NULL ORDER BY ej2.start_date DESC LIMIT 1) AS Nombre_Jefe
-            FROM employees e
-            LEFT JOIN areas a ON e.area_id = a.id
+
+                -- Jefatura
+                jefe.full_name AS Nombre_Jefe
+
+            FROM employees_jobs ej
+            JOIN employees e 
+                ON ej.person_rut = e.rut
+            LEFT JOIN areas a 
+                ON e.area_id = a.id
+            LEFT JOIN employees jefe 
+                ON ej.boss_rut = jefe.rut
+
             WHERE e.status = 'activo'
-            ORDER BY e.full_name
-            LIMIT 2000
+            AND ej.base_wage > 0   -- opcional, para evitar registros sin sueldo
+            ORDER BY e.full_name, ej.start_date;
+
             """
             df = pd.read_sql(query, conn)
             if not df.empty:
