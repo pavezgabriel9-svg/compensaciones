@@ -14,16 +14,16 @@ from datetime import datetime
 # Config BD
 # ----------------------------------------------------------
 # Config BD - Windows
-# DB_HOST = "192.168.245.33"
-# DB_USER = "compensaciones_rrhh"
-# DB_PASSWORD = "_Cramercomp2025_"
-# DB_NAME = "rrhh_app"
+DB_HOST = "192.168.245.33"
+DB_USER = "compensaciones_rrhh"
+DB_PASSWORD = "_Cramercomp2025_"
+DB_NAME = "rrhh_app"
 
 # Config BD - mac (ejemplo, comentado)
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "cancionanimal"
-DB_NAME = "conexion_buk"
+# DB_HOST = "localhost"
+# DB_USER = "root"
+# DB_PASSWORD = "cancionanimal"
+# DB_NAME = "conexion_buk"
 
 
 class CompensaViewer:
@@ -255,17 +255,26 @@ class CompensaViewer:
         self.area_combo = ttk.Combobox(fila1, textvariable=self.area_var, state="readonly", width=20)
         self.area_combo.pack(side='left', padx=5)
 
-        # Segunda fila - Búsqueda por nombre/rut
+        # Segunda fila de filtros
         fila2 = tk.Frame(filtros_frame, bg='#ecf0f1')
         fila2.pack(fill='x', pady=5)
-        tk.Label(fila2, text="🔎 Buscar (Nombre/rut):", bg='#ecf0f1', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
+        # Búsqueda por nombre o rut
+        tk.Label(fila2, text="Buscar por Nombre/rut:", bg='#ecf0f1', font=('Arial', 10)).pack(side='left', padx=5)
         self.search_name_var = tk.StringVar()
         self.search_name_entry = ttk.Entry(fila2, textvariable=self.search_name_var, width=30)
         self.search_name_entry.pack(side='left', padx=5)
+        # Búsqueda por cargo
+        tk.Label(fila2, text="Cargo:", bg='#ecf0f1').pack(side='left', padx=10)
+        self.search_cargo_var = tk.StringVar()
+        self.search_cargo_entry = ttk.Entry(fila2, textvariable=self.search_cargo_var, width=20)
+        self.search_cargo_entry.pack(side='left', padx=5)
+        self.search_cargo_entry.bind('<KeyRelease>', lambda event: self.actualizar_tabla())
+
+
         # Bind para búsqueda en tiempo real
         self.search_name_entry.bind('<KeyRelease>', lambda event: self.actualizar_tabla())
-        tk.Button(fila2, text="🔍 Aplicar Filtros", command=self.actualizar_tabla, bg='#27ae60', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=10)
-        tk.Button(fila2, text="🧹 Limpiar", command=self.limpiar_filtros, bg='#95a5a6', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
+        tk.Button(fila2, text="Aplicar Filtros", command=self.actualizar_tabla, bg='#27ae60', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=10)
+        tk.Button(fila2, text="Limpiar", command=self.limpiar_filtros, bg='#95a5a6', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
 
         # Tabla
         tabla_frame = tk.Frame(main_split, bg='#ecf0f1')
@@ -276,7 +285,7 @@ class CompensaViewer:
         tree_frame.pack(fill='both', expand=True)
 
         # Columnas simplificadas para vista inicial
-        cols = ("rut", "Nombre", "Cargo", "Jefatura", "Sueldo Base")
+        cols = ("Nombre", "Cargo", "Jefatura", "Sueldo Base", "Años de Servicio")
         self.tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=18)
 
         # Configurar columnas
@@ -347,6 +356,10 @@ class CompensaViewer:
             mask_nombre = df["Nombre"].str.lower().apply(lambda x: all(p in x for p in palabras) if isinstance(x, str) else False)
             mask_rut = df["rut"].str.contains(search_term, case=False, na=False)
             df = df[mask_nombre | mask_rut]
+        search_cargo_term = self.search_cargo_var.get().strip()
+        if search_cargo_term and not df.empty:
+            df = df[df["Cargo_Actual"].str.contains(search_cargo_term, case=False, na=False)]
+            
         return df
 
     def limpiar_filtros(self):
@@ -354,6 +367,7 @@ class CompensaViewer:
         self.periodo_var.set("Todos")
         self.area_var.set("Todos")
         self.search_name_var.set("")
+        self.search_cargo_var.set("")
         self.actualizar_tabla()
 
     def actualizar_metricas(self):
@@ -387,12 +401,14 @@ class CompensaViewer:
             sueldo_actual = f"${row['Sueldo_Base']:,.0f}" if pd.notna(row.get('Sueldo_Base')) else "N/A"
             jefatura = row.get('Nombre_Jefe', 'N/A') if pd.notna(row.get('Nombre_Jefe')) else "N/A"
             cargo = row.get('Cargo_Actual', 'N/A')
+            anos_servicio = f"{row.get('Años_de_Servicio', 0):.1f}"
             self.tree.insert("", "end", values=(
-                row.get("rut", ""),
+                #row.get("rut", ""),
                 row.get("Nombre", ""),
                 cargo,
                 jefatura,
-                sueldo_actual
+                sueldo_actual,
+                anos_servicio
             ))
 
     # ------------------------------------------------------
