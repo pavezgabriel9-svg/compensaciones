@@ -255,25 +255,41 @@ class CompensaViewer:
         self.area_combo = ttk.Combobox(fila1, textvariable=self.area_var, state="readonly", width=20)
         self.area_combo.pack(side='left', padx=5)
 
+        # Sección de acciones
+        acciones_frame = tk.LabelFrame(main_split, text="Acciones", font=('Arial', 12, 'bold'), bg='#ecf0f1', fg='#2c3e50', padx=8, pady=8)
+        acciones_frame.pack(fill='x', pady=(8, 0))
+
+        self.btn_comparar = tk.Button(acciones_frame, text="Comparar Seleccionados",
+                                    command=self.comparar_seleccionados,
+                                    state='disabled', # Deshabilitado por defecto
+                                    bg='#2980b9', fg='white', font=('Arial', 10, 'bold'),
+                                    relief='flat', padx=15, pady=5)
+        self.btn_comparar.pack(side='left', padx=10)
+
         # Segunda fila de filtros
         fila2 = tk.Frame(filtros_frame, bg='#ecf0f1')
         fila2.pack(fill='x', pady=5)
         # Búsqueda por nombre o rut
-        tk.Label(fila2, text="Buscar por Nombre/rut:", bg='#ecf0f1', font=('Arial', 10)).pack(side='left', padx=5)
+        tk.Label(fila2, text="Buscar por Nombre/rut:", bg='#ecf0f1').pack(side='left', padx=5)
         self.search_name_var = tk.StringVar()
         self.search_name_entry = ttk.Entry(fila2, textvariable=self.search_name_var, width=30)
         self.search_name_entry.pack(side='left', padx=5)
         # Búsqueda por cargo
-        tk.Label(fila2, text="Cargo:", bg='#ecf0f1').pack(side='left', padx=10)
+        tk.Label(fila2, text="Buscar por Cargo:", bg='#ecf0f1').pack(side='left', padx=10)
         self.search_cargo_var = tk.StringVar()
         self.search_cargo_entry = ttk.Entry(fila2, textvariable=self.search_cargo_var, width=20)
         self.search_cargo_entry.pack(side='left', padx=5)
         self.search_cargo_entry.bind('<KeyRelease>', lambda event: self.actualizar_tabla())
-
+        # Búsqueda por Jefatura
+        tk.Label(fila2, text="Buscar por Jefatura:", bg='#ecf0f1').pack(side='left', padx=10)
+        self.search_jefatura_var = tk.StringVar()
+        self.search_jefatura_entry = ttk.Entry(fila2, textvariable=self.search_jefatura_var, width=20)
+        self.search_jefatura_entry.pack(side='left', padx=5)
+        self.search_jefatura_entry.bind('<KeyRelease>', lambda event: self.actualizar_tabla())
 
         # Bind para búsqueda en tiempo real
         self.search_name_entry.bind('<KeyRelease>', lambda event: self.actualizar_tabla())
-        tk.Button(fila2, text="Aplicar Filtros", command=self.actualizar_tabla, bg='#27ae60', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=10)
+        tk.Button(fila2, text="Filtrar", command=self.actualizar_tabla, bg='#27ae60', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=10)
         tk.Button(fila2, text="Limpiar", command=self.limpiar_filtros, bg='#95a5a6', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
 
         # Tabla
@@ -285,17 +301,18 @@ class CompensaViewer:
         tree_frame.pack(fill='both', expand=True)
 
         # Columnas simplificadas para vista inicial
-        cols = ("Nombre", "Cargo", "Jefatura", "Sueldo Base", "Años de Servicio")
-        self.tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=18)
+        cols = ("RUT", "Nombre", "Cargo", "Jefatura", "Sueldo Base", "Años de Servicio")
+        self.tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=18, selectmode="extended")
 
         # Configurar columnas
-        anchos = [120, 200, 150, 150, 130]
+        anchos = [50, 120, 200, 150, 150, 130]
         for i, col in enumerate(cols):
             self.tree.heading(col, text=col)
             self.tree.column(col, anchor="center", width=anchos[i])
 
         # Bind para doble clic
         self.tree.bind("<Double-1>", self.abrir_ficha_persona)
+        self.tree.bind('<<TreeviewSelect>>', self.verificar_seleccion_para_comparar)
 
         # Scrollbars
         scrollbar_v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.tree.yview)
@@ -359,8 +376,13 @@ class CompensaViewer:
         search_cargo_term = self.search_cargo_var.get().strip()
         if search_cargo_term and not df.empty:
             df = df[df["Cargo_Actual"].str.contains(search_cargo_term, case=False, na=False)]
+        # Búsqueda por Jefatura
+        search_jefatura_term = self.search_jefatura_var.get().strip()
+        if search_jefatura_term and not df.empty:
+            df = df[df["Nombre_Jefe"].str.contains(search_jefatura_term, case=False, na=False)]
             
         return df
+    
 
     def limpiar_filtros(self):
         """Limpia todos los filtros"""
@@ -368,7 +390,219 @@ class CompensaViewer:
         self.area_var.set("Todos")
         self.search_name_var.set("")
         self.search_cargo_var.set("")
+        self.search_jefatura_var.set("")
         self.actualizar_tabla()
+
+    def verificar_seleccion_para_comparar(self, event=None):
+        """Habilita o deshabilita el botón de comparar según el número de elementos seleccionados."""
+        seleccionados = self.tree.selection()
+        if len(seleccionados) >= 2:
+            self.btn_comparar.config(state='normal')
+        else:
+            self.btn_comparar.config(state='disabled')
+
+    def comparar_seleccionados(self):
+        """Recupera los RUTs de los empleados seleccionados y llama a la función de comparación."""
+        seleccionados = self.tree.selection()
+        if len(seleccionados) < 2:
+            messagebox.showwarning("Selección mínima", "Por favor, selecciona al menos dos personas para comparar.")
+            return
+
+        # Para obtener los datos de la fila, necesitamos el RUT, que no está visible
+        # en tu tabla actual. El RUT es la primera columna en el DataFrame.
+        # Asumiré que el RUT está disponible en la fila de datos del Treeview
+        # al momento de insertarla.
+
+        # Ejemplo de cómo obtener el RUT de la fila seleccionada
+        # (requiere que el RUT sea parte de los 'values' de la fila insertada)
+        ruts_a_comparar = []
+        for item in seleccionados:
+            valores_fila = self.tree.item(item, 'values')
+            # Necesitas asegurarte de que el RUT esté en una posición conocida.
+            # En tu código actual, los valores son: Nombre, Cargo, Jefatura, Sueldo Base, Años.
+            # No se está insertando el RUT.
+
+            # SOLUCIÓN: El Treeview de tkinter permite almacenar un valor oculto llamado 'iid' (índice interno).
+            # Podemos usar el 'iid' como el RUT para cada fila para recuperarlo luego.
+            # O mejor aún, insertar el RUT como el 'text' de la fila, que es invisible.
+
+        # La implementación más robusta es obtener la información de la fila
+        # del Treeview y luego buscar el RUT correspondiente en tu DataFrame original.
+        nombres_seleccionados = [self.tree.item(item, 'values')[0] for item in seleccionados]
+
+        # Filtramos el DataFrame original para obtener los RUTs de los seleccionados
+        df_filtrado_para_ruts = self.data_df[self.data_df['Nombre'].isin(nombres_seleccionados)].copy()
+
+        # Ojo: esto podría traer más de un registro por persona si hay cambios de cargo/sueldo.
+        # Es mejor usar la lista de 'person_id' o 'rut' si los insertas en el Treeview.
+        # Sugerencia: En la línea self.tree.insert, inserta el RUT en la columna oculta 'text'
+        # self.tree.insert("", "end", text=row.get("rut", ""), values=(...))
+        # Y luego en esta función lo recuperas con self.tree.item(item, "text")
+
+        # Esto se abordará en detalle en la segunda parte de la solución
+        # cuando se implemente la ventana de comparación.
+
+        messagebox.showinfo("Prueba de Comparación", f"Empleados seleccionados para comparar:\n{nombres_seleccionados}")
+
+        # Aquí llamarías a la función `mostrar_comparativa(ruts_a_comparar)`
+        # que implementaremos en la siguiente fase.
+    #------------------------------------------------------
+    # Funciones para la Comparación
+    #------------------------------------------------------
+    def comparar_seleccionados(self):
+        """
+        Recupera los RUTs de los empleados seleccionados y llama a la función de comparación.
+        """
+        seleccionados = self.tree.selection()
+        if len(seleccionados) < 2:
+            messagebox.showwarning("Selección mínima", "Por favor, selecciona al menos dos personas para comparar.")
+            return
+
+        ruts_a_comparar = []
+        for item in seleccionados:
+            # El RUT ya se encuentra en el índice 0 de los valores de la fila.
+            rut = self.tree.item(item, "values")[0]
+            ruts_a_comparar.append(rut)
+            
+        # Ahora llamamos a la función `mostrar_comparativa` que es un método de la clase
+        self.mostrar_comparativa(ruts_a_comparar)
+
+
+    def mostrar_comparativa(self, ruts):
+        """
+        Crea la ventana de comparación para los empleados con los RUTs proporcionados.
+        """
+        win = tk.Toplevel(self.root)
+        win.title("📊 Comparativa de Empleados")
+        win.geometry("1400x800+50+50")
+        win.configure(bg='#f8f9fa')
+        
+        notebook = ttk.Notebook(win)
+        notebook.pack(fill='both', expand=True, padx=10, pady=10)
+
+        # --- Pestaña de Datos ---
+        datos_frame = ttk.Frame(notebook)
+        notebook.add(datos_frame, text="📋 Datos Comparativos")
+        self.crear_pestaña_datos_comparativos(datos_frame, ruts)
+
+        # --- Pestaña de Gráfico ---
+        grafico_frame = ttk.Frame(notebook)
+        notebook.add(grafico_frame, text="📈 Evolución Salarial Comparada")
+        self.crear_pestaña_grafico_comparativo(grafico_frame, ruts)
+        
+
+    def crear_pestaña_datos_comparativos(self, parent_frame, ruts):
+        """
+        Genera la tabla de datos para la comparación.
+        """
+        # Usar un Treeview para una vista tabular de la información
+        cols = ["Dato"] + [f"Empleado {i+1}" for i in range(len(ruts))]
+        tree = ttk.Treeview(parent_frame, columns=cols, show="headings")
+        
+        for col in cols:
+            tree.heading(col, text=col)
+            tree.column(col, anchor='w', width=150)
+
+        # Obtener y preparar los datos de cada persona
+        data_by_person = []
+        for rut in ruts:
+            # Aquí obtienes los datos de cada empleado, similar a como lo haces en abrir_ficha_persona
+            # Usar el último registro disponible para la comparación
+            df_persona_ultimo = self.data_df[self.data_df["rut"] == rut].sort_values('start_date').iloc[-1]
+            
+            # También puedes obtener datos adicionales del employees_df
+            emp_info = self.employees_df[self.employees_df['rut'] == rut].iloc[0] if not self.employees_df[self.employees_df['rut'] == rut].empty else None
+            
+            # Unir los datos en un diccionario o estructura similar para fácil acceso
+            person_data = {
+                "Nombre": df_persona_ultimo['Nombre'],
+                "RUT": df_persona_ultimo['rut'],
+                "Cargo": df_persona_ultimo['Cargo_Actual'],
+                "Área": df_persona_ultimo['Nombre_Area'],
+                "Antigüedad (años)": f"{df_persona_ultimo['Años_de_Servicio']:.1f}",
+                "Sueldo Base": f"${df_persona_ultimo['Sueldo_Base']:,.0f}",
+                "Sueldo Líquido": "N/A", # Liquidaciones no están en data_df
+                "Edad": "N/A" # Hay que calcular la edad desde el cumpleaños
+            }
+            
+            # Recuperar sueldo líquido de settlements_df
+            if self.settlements_df is not None:
+                liq_df = self.settlements_df[self.settlements_df['rut'] == rut].sort_values('Pay_Period', ascending=False)
+                if not liq_df.empty:
+                    person_data["Sueldo Líquido"] = f"${liq_df['Liquido_a_Pagar'].iloc[0]:,.0f}"
+
+            # Recuperar edad si el dato existe
+            if emp_info is not None and pd.notna(emp_info.get('birthday')):
+                edad = datetime.now().year - pd.to_datetime(emp_info['birthday']).year
+                person_data["Edad"] = edad
+            
+            data_by_person.append(person_data)
+
+        # Rellenar el Treeview con los datos comparativos
+        if not data_by_person:
+            tk.Label(parent_frame, text="No hay datos para comparar", font=('Arial', 12)).pack(pady=20)
+            return
+
+        # Usar el primer empleado como referencia para las filas
+        referencia = data_by_person[0]
+        for key in referencia:
+            valores_fila = [key] + [d.get(key, 'N/A') for d in data_by_person]
+            tree.insert("", "end", values=valores_fila)
+            
+        tree.pack(fill='both', expand=True, padx=10, pady=10)
+
+    def crear_pestaña_grafico_comparativo(self, parent_frame, ruts):
+        """
+        Genera el gráfico comparativo de la evolución salarial.
+        """
+        fig, ax = plt.subplots(figsize=(10, 5))
+        
+        colores = plt.cm.get_cmap('tab10', len(ruts)) # Asignar un color único a cada persona
+        
+        for i, rut in enumerate(ruts):
+            # Filtrar datos de sueldo base
+            df_persona_base = self.data_df[self.data_df["rut"] == rut].copy()
+            if df_persona_base.empty:
+                continue
+            
+            # Preparar los datos de sueldo base para el gráfico (similar a la ficha de persona)
+            df_persona_base.sort_values(by="start_date", inplace=True)
+            df_persona_base['start_month'] = df_persona_base['start_date'].dt.to_period('M').dt.to_timestamp()
+            
+            # Obtener el último nombre para la leyenda
+            nombre = df_persona_base.iloc[-1]['Nombre']
+            
+            # Trazar sueldo base
+            ax.plot(df_persona_base['start_month'], df_persona_base['Sueldo_Base'], 
+                    marker='o', linestyle='-', color=colores(i), label=f'{nombre} (Base)')
+            
+            # Trazar sueldo líquido si está disponible
+            df_liquidaciones_persona = self.settlements_df[self.settlements_df["rut"] == rut].copy()
+            if not df_liquidaciones_persona.empty:
+                df_liquidaciones_persona.set_index('Pay_Period', inplace=True)
+                ax.plot(df_liquidaciones_persona.index, df_liquidaciones_persona['Liquido_a_Pagar'], 
+                        marker='s', linestyle='--', color=colores(i), label=f'{nombre} (Líq.)')
+
+        # Configuración del gráfico
+        ax.legend(fontsize=8, loc='upper left')
+        ax.set_xlabel("Período", fontsize=10)
+        ax.set_ylabel("Sueldo ($)", fontsize=10)
+        ax.set_title("Evolución Salarial Comparada", fontsize=12, pad=15)
+        ax.grid(True, alpha=0.3)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        plt.xticks(rotation=45)
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+        plt.tight_layout()
+        
+        # Embeber el gráfico en la ventana de Tkinter
+        canvas_chart = FigureCanvasTkAgg(fig, master=parent_frame)
+        canvas_chart.draw()
+        canvas_chart.get_tk_widget().pack(fill='both', expand=True)
+        
+        # Agregar una breve descripción de las métricas
+        stats_text = "Se compara el Sueldo Base (línea continua) y el Sueldo Líquido (línea discontinua) para cada empleado seleccionado."
+        tk.Label(parent_frame, text=stats_text, font=('Arial', 10), bg='white', fg='#2c3e50').pack(pady=(6, 0))
+
 
     def actualizar_metricas(self):
         if self.data_df is None or self.data_df.empty:
@@ -394,16 +628,15 @@ class CompensaViewer:
         # Mostrar solo último registro por persona
         df_ultimo = self.data_df.sort_values(["person_id", "Año", "Mes"]).groupby("person_id").tail(1)
         df_filtrado = self.aplicar_filtros(df_ultimo)
-        # Actualizar métricas con datos filtrados
         self.actualizar_metricas()
-        # Llenar tabla con vista simplificada
+        # Llenado de tabla
         for _, row in df_filtrado.iterrows():
             sueldo_actual = f"${row['Sueldo_Base']:,.0f}" if pd.notna(row.get('Sueldo_Base')) else "N/A"
             jefatura = row.get('Nombre_Jefe', 'N/A') if pd.notna(row.get('Nombre_Jefe')) else "N/A"
             cargo = row.get('Cargo_Actual', 'N/A')
             anos_servicio = f"{row.get('Años_de_Servicio', 0):.1f}"
             self.tree.insert("", "end", values=(
-                #row.get("rut", ""),
+                row.get("rut", ""),
                 row.get("Nombre", ""),
                 cargo,
                 jefatura,
@@ -483,7 +716,7 @@ class CompensaViewer:
 
         # Crear ventana de ficha
         win = tk.Toplevel(self.root)
-        win.title(f"👤 Ficha de Persona - {df_completo['Nombre'].iloc[0]}")
+        win.title(f"Ficha de {df_completo['Nombre'].iloc[0]}")
         win.geometry("1200x800+100+50")
         win.configure(bg='#f8f9fa')
 
@@ -670,7 +903,7 @@ class CompensaViewer:
             return
         # Ventana secundaria
         win = tk.Toplevel(self.root)
-        win.title("📈 Evolución Salarial General")
+        win.title("Evolución Salarial General")
         win.geometry("1000x700+100+100")
         win.configure(bg='#f0f0f0')
         win.grab_set()
