@@ -7,22 +7,23 @@ import pymysql
 import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from datetime import datetime
 
 # ----------------------------------------------------------
 # Config BD
 # ----------------------------------------------------------
 # Config BD - Windows
-DB_HOST = "192.168.245.33"
-DB_USER = "compensaciones_rrhh"
-DB_PASSWORD = "_Cramercomp2025_"
-DB_NAME = "rrhh_app"
+# DB_HOST = "192.168.245.33"
+# DB_USER = "compensaciones_rrhh"
+# DB_PASSWORD = "_Cramercomp2025_"
+# DB_NAME = "rrhh_app"
 
 # Config BD - mac (ejemplo, comentado)
-# DB_HOST = "localhost"
-# DB_USER = "root"
-# DB_PASSWORD = "cancionanimal"
-# DB_NAME = "conexion_buk"
+DB_HOST = "localhost"
+DB_USER = "root"
+DB_PASSWORD = "cancionanimal"
+DB_NAME = "conexion_buk"
 
 
 class CompensaViewer:
@@ -31,6 +32,7 @@ class CompensaViewer:
         self._configurar_ventana()
         self.data_df = None
         self.employees_df = None
+        self.settlements_df = None 
         self.setup_ui()
         self.cargar_datos()
 
@@ -64,7 +66,7 @@ class CompensaViewer:
         try:
             # Query optimizada para obtener datos esenciales
             query = """
-            SELECT 
+            SELECT
                 e.person_id,
                 e.rut,
                 e.full_name AS Nombre,
@@ -86,15 +88,14 @@ class CompensaViewer:
                 jefe.full_name AS Nombre_Jefe
 
             FROM employees_jobs ej
-            JOIN employees e 
+            JOIN employees e
                 ON ej.person_rut = e.rut
-            LEFT JOIN areas a 
+            LEFT JOIN areas a
                 ON e.area_id = a.id
-            LEFT JOIN employees jefe 
+            LEFT JOIN employees jefe
                 ON ej.boss_rut = jefe.rut
 
-            WHERE e.status = 'activo'
-            AND ej.base_wage > 0   -- opcional, para evitar registros sin sueldo
+            WHERE e.status = 'activo' AND ej.start_date >= '2018-01-01'
             ORDER BY e.full_name, ej.start_date;
 
             """
@@ -102,12 +103,18 @@ class CompensaViewer:
             if not df.empty:
                 # Crear las columnas de fecha
                 df['active_since'] = pd.to_datetime(df['active_since'], errors='coerce')
+                df['start_date'] = pd.to_datetime(df['start_date'], errors='coerce')
+
+                # Calcular Años_de_Servicio usando active_since (es la antigüedad del empleado)
                 df["Años_de_Servicio"] = (pd.to_datetime("today").year - df["active_since"].dt.year).fillna(0)
-                df['Período'] = df['active_since'].dt.to_period('M').astype(str)
-                df['Año'] = df['active_since'].dt.year
-                df['Mes'] = df['active_since'].dt.month
-                # Crear la columna Sueldo_Base_Liquidacion a partir de Sueldo_Base (siempre que no haya otra fuente)
-                df['Sueldo_Base_Liquidacion'] = df['Sueldo_Base']
+
+                # >>> CAMBIO IMPORTANTE AQUÍ <<<
+                # Para la evolución salarial, Período, Año y Mes deben basarse en start_date del rol
+                df['Período'] = df['start_date'].dt.to_period('M').astype(str)
+                df['Año'] = df['start_date'].dt.year
+                df['Mes'] = df['start_date'].dt.month
+
+                df['sueldo_base'] = df['Sueldo_Base']
             conn.close()
             return df
         except Exception as e:
@@ -117,7 +124,8 @@ class CompensaViewer:
             except:
                 pass
             return pd.DataFrame()
-
+    
+    
     def obtener_datos_empleados(self):
         """Obtiene datos completos de empleados para la ficha"""
         conn = self.conectar_bd()
@@ -125,7 +133,11 @@ class CompensaViewer:
             return pd.DataFrame()
         try:
             query = """
-            SELECT person_id, id, full_name, rut, email, phone, gender, birthday, university, nationality, active_since, status, start_date, end_date, contract_type, id_boss, rut_boss, base_wage, name_role, area_id, cost_center
+            SELECT person_id, id, full_name, rut, email, phone, gender, birthday, 
+            university, nationality, active_since, status, start_date, end_date, 
+            contract_type, id_boss, rut_boss, base_wage, name_role, area_id, cost_center,
+            degree
+        
             FROM employees
             """
             df = pd.read_sql(query, conn)
@@ -133,6 +145,39 @@ class CompensaViewer:
             return df
         except Exception as e:
             print(f"Error obteniendo datos de empleados: {e}")
+            try:
+                conn.close()
+            except:
+                pass
+            return pd.DataFrame()
+        
+    def obtener_datos_liquidaciones(self):
+        """Obtiene datos de liquidaciones desde historical_settlements."""
+        conn = self.conectar_bd()
+        if not conn:
+            return pd.DataFrame()
+        try:
+            query = """
+            SELECT
+                `Pay_Period`,
+                `RUT` AS rut,
+                `Liquido_a_Pagar`
+            FROM historical_settlements
+            WHERE `Pay_Period` >= '2018-01-01'
+            ORDER BY rut, `Pay_Period`;
+            """
+            df_liquidaciones = pd.read_sql(query, conn)
+            if not df_liquidaciones.empty:
+                df_liquidaciones['Pay_Period'] = pd.to_datetime(df_liquidaciones['Pay_Period'], errors='coerce')
+                # Creamos el Periodo para hacer join o filtrar
+                df_liquidaciones['Periodo_Liquidacion'] = df_liquidaciones['Pay_Period'].dt.to_period('M').astype(str)
+                
+                df_liquidaciones = df_liquidaciones.dropna(subset=['Pay_Period', 'rut', 'Liquido_a_Pagar'])
+
+            conn.close()
+            return df_liquidaciones
+        except Exception as e:
+            messagebox.showerror("Error SQL Liquidaciones", f"Error consultando datos de liquidaciones:\n{e}")
             try:
                 conn.close()
             except:
@@ -156,15 +201,16 @@ class CompensaViewer:
         # Sección métricas
         self.crear_seccion_metricas(main_frame)
         # Sección filtros + tabla
+        
         self.crear_seccion_principal(main_frame)
         # Sección acciones
-        self.crear_seccion_acciones(main_frame)
+        #self.crear_seccion_acciones(main_frame)
 
     # ------------------------------------------------------
     # Sección métricas
     # ------------------------------------------------------
     def crear_seccion_metricas(self, parent):
-        metrics_frame = tk.LabelFrame(parent, text="📈 Indicadores Principales", font=('Arial', 12, 'bold'), bg='#ecf0f1', fg='#2c3e50', padx=10, pady=10)
+        metrics_frame = tk.LabelFrame(parent, text="Indicadores", font=('Arial', 12, 'bold'), bg='#ecf0f1', fg='#2c3e50', padx=10, pady=10)
         metrics_frame.pack(fill='x', pady=(0, 8))
         row_metrics = tk.Frame(metrics_frame, bg='#ecf0f1')
         row_metrics.pack(fill='x')
@@ -175,10 +221,10 @@ class CompensaViewer:
         self.prom_liq_var = tk.StringVar(value="0")
         self.prom_antiguedad_var = tk.StringVar(value="0")
 
-        self._crear_metrica(row_metrics, "👥 Total Empleados", self.total_emp_var, '#3498db')
-        self._crear_metrica(row_metrics, "💰 Sueldo Teórico Prom.", self.prom_teorico_var, '#27ae60')
-        self._crear_metrica(row_metrics, "💸 Sueldo Liquidación Prom.", self.prom_liq_var, '#f39c12')
-        self._crear_metrica(row_metrics, "⏰ Antigüedad Prom.", self.prom_antiguedad_var, '#9b59b6')
+        self._crear_metrica(row_metrics, "Total Empleados", self.total_emp_var, '#3498db')
+        self._crear_metrica(row_metrics, "Sueldo Base", self.prom_teorico_var, '#27ae60')
+        self._crear_metrica(row_metrics, "Sueldo Líquido", self.prom_liq_var, '#f39c12')
+        self._crear_metrica(row_metrics, "Antigüedad Promedio", self.prom_antiguedad_var, '#9b59b6')
 
     def _crear_metrica(self, parent, titulo, variable, color):
         box = tk.Frame(parent, bg=color, relief='raised', bd=2, width=150, height=80)
@@ -194,7 +240,7 @@ class CompensaViewer:
         main_split.pack(fill='both', expand=True, pady=(5, 0))
 
         # Filtros
-        filtros_frame = tk.LabelFrame(main_split, text="🔍 Filtros y Búsqueda", font=('Arial', 12, 'bold'), bg='#ecf0f1', fg='#2c3e50', padx=8, pady=8)
+        filtros_frame = tk.LabelFrame(main_split, text="Filtros y Búsqueda", font=('Arial', 12, 'bold'), bg='#ecf0f1', fg='#2c3e50', padx=8, pady=8)
         filtros_frame.pack(fill='x')
 
         # Primera fila de filtros
@@ -230,7 +276,7 @@ class CompensaViewer:
         tree_frame.pack(fill='both', expand=True)
 
         # Columnas simplificadas para vista inicial
-        cols = ("rut", "Nombre", "Cargo", "Jefatura", "Sueldo Base Actual")
+        cols = ("rut", "Nombre", "Cargo", "Jefatura", "Sueldo Base")
         self.tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=18)
 
         # Configurar columnas
@@ -255,14 +301,14 @@ class CompensaViewer:
     # ------------------------------------------------------
     # Sección Acciones
     # ------------------------------------------------------
-    def crear_seccion_acciones(self, parent):
-        acciones_frame = tk.LabelFrame(parent, text="🚀 Acciones", font=('Arial', 12, 'bold'), bg='#ecf0f1', fg='#2c3e50', padx=10, pady=10)
-        acciones_frame.pack(fill='x', pady=(8, 0))
-        btn_frame = tk.Frame(acciones_frame, bg='#ecf0f1')
-        btn_frame.pack()
-        tk.Button(btn_frame, text="📈 Ver Evolución Salarial", command=self.mostrar_evolucion, bg='#8e44ad', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
-        tk.Button(btn_frame, text="📊 Resumen por Área", command=self.mostrar_resumen_areas, bg='#e67e22', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
-        tk.Button(btn_frame, text="📥 Exportar a Excel", command=self.exportar_excel, bg='#16a085', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
+    # def crear_seccion_acciones(self, parent):
+    #     acciones_frame = tk.LabelFrame(parent, text="Acciones", font=('Arial', 12, 'bold'), bg='#ecf0f1', fg='#2c3e50', padx=10, pady=10)
+    #     acciones_frame.pack(fill='x', pady=(8, 0))
+    #     btn_frame = tk.Frame(acciones_frame, bg='#ecf0f1')
+    #     btn_frame.pack()
+    #     tk.Button(btn_frame, text="📈 Ver Evolución Salarial", command=self.mostrar_evolucion, bg='#8e44ad', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
+    #     tk.Button(btn_frame, text="📊 Resumen por Área", command=self.mostrar_resumen_areas, bg='#e67e22', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
+    #     tk.Button(btn_frame, text="📥 Exportar a Excel", command=self.exportar_excel, bg='#16a085', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
 
     # ------------------------------------------------------
     # Funciones principales
@@ -270,14 +316,18 @@ class CompensaViewer:
     def cargar_datos(self):
         self.data_df = self.obtener_datos()
         self.employees_df = self.obtener_datos_empleados()
+        self.settlements_df = self.obtener_datos_liquidaciones() # <<--- Nueva línea para cargar liquidaciones
+
         if self.data_df is None or self.data_df.empty:
             messagebox.showwarning("Sin datos", "No se encontraron datos en la base.")
             return
+
         # Poblar combos dinámicos
         periodos = sorted(self.data_df["Período"].dropna().unique())
         areas = sorted(self.data_df["Nombre_Area"].dropna().unique())
         self.periodo_combo['values'] = ["Todos"] + periodos
         self.area_combo['values'] = ["Todos"] + areas
+
         # Actualizar métricas y tabla
         self.actualizar_metricas()
         self.actualizar_tabla()
@@ -289,7 +339,7 @@ class CompensaViewer:
         # Filtro por área
         if self.area_var.get() != "Todos":
             df = df[df["Nombre_Area"] == self.area_var.get()]
-        # Búsqueda mejorada por palabras separadas en nombre + rut
+        # Búsqueda mejorada por palabras separadas en nombre + rut!!!!!
         search_term = self.search_name_var.get().strip()
         if search_term and not df.empty:
             palabras = search_term.lower().split()
@@ -314,7 +364,7 @@ class CompensaViewer:
         df_filtrado = self.aplicar_filtros(df_ultimo)
         total = len(df_filtrado) if not df_filtrado.empty else 0
         prom_teo = round(df_filtrado["Sueldo_Base"].mean(), 0) if not df_filtrado.empty else 0
-        prom_liq = round(df_filtrado["Sueldo_Base_Liquidacion"].mean(), 0) if not df_filtrado.empty else 0
+        prom_liq = round(df_filtrado["sueldo_base"].mean(), 0) if not df_filtrado.empty else 0
         prom_antiguedad = round(df_filtrado["Años_de_Servicio"].mean(), 1) if not df_filtrado.empty else 0
         self.total_emp_var.set(str(total))
         self.prom_teorico_var.set(f"${prom_teo:,.0f}")
@@ -356,7 +406,7 @@ class CompensaViewer:
         values = self.tree.item(item, "values")
         if not values:
             return
-        rut = values[0]  # rut está en la primera columna
+        rut = values[0] 
         self.mostrar_ficha_persona(rut)
 
     def mostrar_ficha_persona(self, rut):
@@ -364,32 +414,75 @@ class CompensaViewer:
         if self.data_df is None or self.data_df.empty:
             messagebox.showwarning("Sin datos", "No hay datos cargados.")
             return
-        # Obtener datos históricos de la persona
-        df_persona = self.data_df[self.data_df["rut"] == rut].copy()
-        if df_persona.empty:
+
+        # Obtener datos históricos de la persona (sueldo base por rol)
+        df_persona_base = self.data_df[self.data_df["rut"] == rut].copy()
+        if df_persona_base.empty:
             messagebox.showwarning("Sin datos", f"No se encontraron datos para rut: {rut}")
             return
+        df_persona_base.sort_values(by="start_date", inplace=True)
+
+        # Alinear las fechas de inicio al primer día del mes para el gráfico
+        df_persona_base['start_month'] = df_persona_base['start_date'].dt.to_period('M').dt.to_timestamp()
+        df_persona_base.set_index('start_month', inplace=True)
+        
+        # Obtener datos de liquidaciones
+        df_liquidaciones_persona = pd.DataFrame()
+        if self.settlements_df is not None and not self.settlements_df.empty:
+            df_liquidaciones_persona = self.settlements_df[self.settlements_df["rut"] == rut].copy()
+            if not df_liquidaciones_persona.empty:
+                df_liquidaciones_persona.set_index('Pay_Period', inplace=True)
+
+        # ----------------- CAMBIO CLAVE AQUÍ -----------------
+        # Define la fecha de inicio del gráfico como 'active_since' del empleado
+        # Si no existe, usa la fecha de inicio de datos disponible
+        active_since = df_persona_base['active_since'].min()
+        start_date = active_since if pd.notna(active_since) else df_persona_base.index.min()
+        
+        end_date = datetime.now()
+        df_completo = pd.DataFrame(index=pd.date_range(start=start_date, end=end_date, freq='MS'))
+        
+        # Unir los datos de sueldo base y líquido
+        df_completo = df_completo.merge(df_persona_base[['Sueldo_Base']], left_index=True, right_index=True, how='left')
+        df_completo = df_completo.merge(df_liquidaciones_persona[['Liquido_a_Pagar']], left_index=True, right_index=True, how='left')
+
+        # Propagar el último valor conocido del sueldo base hacia adelante
+        df_completo['Sueldo_Base'] = df_completo['Sueldo_Base'].ffill()
+
+        # Restablecer el índice de fecha a una columna
+        df_completo.reset_index(inplace=True)
+        df_completo.rename(columns={'index': 'Fecha'}, inplace=True)
+        df_completo['Año'] = df_completo['Fecha'].dt.year
+        df_completo['Mes'] = df_completo['Fecha'].dt.month
+        
+        # Replicar los datos de la última fila para la tarjeta de información
+        last_row_info = df_persona_base.iloc[-1].copy()
+        for col in last_row_info.index:
+            if col not in df_completo.columns:
+                df_completo[col] = last_row_info[col]
+        
         # Obtener datos adicionales del empleado
         emp_data = self.employees_df[self.employees_df["rut"] == rut] if (self.employees_df is not None) else pd.DataFrame()
         emp_info = emp_data.iloc[0] if not emp_data.empty else None
 
         # Crear ventana de ficha
         win = tk.Toplevel(self.root)
-        win.title(f"👤 Ficha de Persona - {df_persona['Nombre'].iloc[0]}")
+        win.title(f"👤 Ficha de Persona - {df_completo['Nombre'].iloc[0]}")
         win.geometry("1200x800+100+50")
         win.configure(bg='#f8f9fa')
 
-        # Notebook
+        # Notebook (pestañas)
         notebook = ttk.Notebook(win)
         notebook.pack(fill='both', expand=True, padx=10, pady=10)
 
         # Pestaña Datos Generales (con gráfico abajo)
-        self.crear_pestaña_datos_generales(notebook, df_persona, emp_info)
+        self.crear_pestaña_datos_generales(notebook, df_completo, emp_info)
         # Pestaña Historial Completo
-        self.crear_pestaña_historial(notebook, df_persona)
+        self.crear_pestaña_historial(notebook, df_completo)
 
+        # Seleccionar la primera pestaña por defecto
         notebook.select(0)
-
+    
     def crear_pestaña_datos_generales(self, notebook, df_persona, emp_info):
         """Pestaña compacta de datos + gráfico de evolución abajo"""
         frame = ttk.Frame(notebook)
@@ -404,14 +497,14 @@ class CompensaViewer:
         canvas.configure(yscrollcommand=scrollbar.set)
 
         # Último registro
-        ultimo = df_persona.sort_values(["Año", "Mes"]).iloc[-1]
+        ultimo = df_persona.sort_values("Fecha").iloc[-1]
 
         # Encabezado
         header = tk.Frame(scrollable_frame, bg='#f8f9fa')
         header.pack(fill='x', pady=(5, 0))
         tk.Label(header, text=ultimo.get('Nombre', 'N/A'), font=('Arial', 16, 'bold'), bg='#f8f9fa', fg='#2c3e50').pack(anchor='w', padx=8)
 
-        # Tarjetas (estilo limpio y profesional)
+        # Tarjetas
         cards = tk.Frame(scrollable_frame, bg='#f8f9fa')
         cards.pack(fill='x', padx=8)
 
@@ -434,13 +527,17 @@ class CompensaViewer:
         # Información Laboral
         sueldo_actual = ultimo.get('Sueldo_Base', None)
         sueldo_txt = f"${sueldo_actual:,.0f}" if pd.notna(sueldo_actual) else "N/A"
+        sueldo_liquido_actual = ultimo.get('Liquido_a_Pagar', None)
+        sueldo_liq_txt = f"${sueldo_liquido_actual:,.0f}" if pd.notna(sueldo_liquido_actual) else "N/A"
+
         card("💼 Información Laboral", [
             ("Cargo Actual", ultimo.get('Cargo_Actual', 'N/A')),
             ("Área", ultimo.get('Nombre_Area', 'N/A')),
             ("Jefe Directo", ultimo.get('Nombre_Jefe', 'N/A')),
-            ("Tipo Contrato", ultimo.get('Tipo_Contrato_Actual', 'N/A')),
+            ("Tipo Contrato", ultimo.get('Tipo_Contrato', 'N/A')),
             ("Años de Servicio", f"{ultimo.get('Años_de_Servicio', 0):.1f} años"),
             ("Sueldo Base", sueldo_txt),
+            ("Sueldo Líquido", sueldo_liq_txt),
         ])
 
         # Formación Académica
@@ -450,23 +547,34 @@ class CompensaViewer:
         ])
 
         # Gráfico de evolución
-        section_chart = tk.LabelFrame(scrollable_frame, text="📈 Evolución Salarial", font=('Arial', 11, 'bold'), bg='white', fg='#2c3e50', padx=10, pady=10, labelanchor='n')
+        section_chart = tk.LabelFrame(scrollable_frame, text="Evolución Salarial", font=('Arial', 11, 'bold'), bg='white', fg='#2c3e50', padx=10, pady=10, labelanchor='n')
         section_chart.pack(fill='both', expand=True, padx=8, pady=(6, 10))
+        
+        # Usa el dataframe completo sin reindexar, ya que ya tiene la lógica de ffill
+        df_sueldo_plot = df_persona.copy()
 
-        df_sueldo = df_persona.dropna(subset=["Sueldo_Base"]).sort_values(["Año", "Mes"])
-        if df_sueldo.empty:
+        if df_sueldo_plot.empty:
             tk.Label(section_chart, text="No hay datos de sueldo base para mostrar", font=('Arial', 10), bg='white', fg='#7f8c8d').pack(pady=30)
         else:
             fig, ax = plt.subplots(figsize=(10, 4.8))
-            ax.plot(df_sueldo["Período"], df_sueldo["Sueldo_Base"], marker='o', linewidth=2, label="Sueldo Base Teórico")
-            # si existe columna de liquidación y no toda vacía, la grafica
-            if "Sueldo_Base_Liquidacion" in df_sueldo.columns and not df_sueldo["Sueldo_Base_Liquidacion"].isna().all():
-                ax.plot(df_sueldo["Período"], df_sueldo["Sueldo_Base_Liquidacion"], marker='s', linewidth=2, label="Sueldo Base Liquidación")
+            
+            # El eje X ahora es la columna 'Fecha' que creaste al combinar los dataframes
+            ax.plot(df_sueldo_plot["Fecha"], df_sueldo_plot["Sueldo_Base"], marker='o', linewidth=2, label="Sueldo Base")
+            
+            if "Liquido_a_Pagar" in df_sueldo_plot.columns and not df_sueldo_plot["Liquido_a_Pagar"].isna().all():
+                # Asegúrate de que los valores líquidos se tracen en las fechas correctas
+                ax.plot(df_sueldo_plot["Fecha"], df_sueldo_plot["Liquido_a_Pagar"], marker='s', linewidth=2, label="Sueldo Líquido")
+            
             ax.legend(fontsize=9)
             ax.set_xlabel("Período", fontsize=10)
             ax.set_ylabel("Sueldo ($)", fontsize=10)
+            ax.set_title(f"Evolución Salarial de {df_sueldo_plot.iloc[0].get('Nombre', 'N/A')}", fontsize=12, pad=15)
+
+            # Ajusta el formateador de fechas para mostrar el año
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+            
             ax.grid(True, alpha=0.3)
-            ax.tick_params(axis='x', rotation=45)
+            plt.xticks(rotation=45)
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
             plt.tight_layout()
             canvas_chart = FigureCanvasTkAgg(fig, master=section_chart)
@@ -474,11 +582,23 @@ class CompensaViewer:
             canvas_chart.get_tk_widget().pack(fill='both', expand=True)
 
             # Stats compactas
-            primer = df_sueldo["Sueldo_Base"].iloc[0]
-            ultimo_val = df_sueldo["Sueldo_Base"].iloc[-1]
-            variacion = ultimo_val - primer
-            var_pct = (ultimo_val / primer - 1) * 100 if primer > 0 else 0
-            tk.Label(section_chart, text=f"Primer: ${primer:,.0f} | Último: ${ultimo_val:,.0f} | Variación: ${variacion:,.0f} ({var_pct:+.1f}%)", font=('Arial', 10, 'bold'), bg='white', fg='#2c3e50').pack(pady=(6, 0))
+            primer_base = df_sueldo_plot["Sueldo_Base"].iloc[0]
+            ultimo_val_base = df_sueldo_plot["Sueldo_Base"].iloc[-1]
+            variacion_base = ultimo_val_base - primer_base
+            var_pct_base = (ultimo_val_base / primer_base - 1) * 100 if primer_base > 0 else 0
+
+            stats_text = f"Primer (Base): ${primer_base:,.0f} | Último (Base): ${ultimo_val_base:,.0f} | Variación (Base): ${variacion_base:,.0f} ({var_pct_base:+.1f}%)"
+
+            if "Liquido_a_Pagar" in df_sueldo_plot.columns and not df_sueldo_plot["Liquido_a_Pagar"].isna().all():
+                primer_liq_series = df_sueldo_plot["Liquido_a_Pagar"].dropna()
+                if not primer_liq_series.empty:
+                    primer_liq = primer_liq_series.iloc[0]
+                    ultimo_val_liq = primer_liq_series.iloc[-1]
+                    variacion_liq = ultimo_val_liq - primer_liq
+                    var_pct_liq = (ultimo_val_liq / primer_liq - 1) * 100 if primer_liq > 0 else 0
+                    stats_text += f"\nPrimer (Líq.): ${primer_liq:,.0f} | Último (Líq.): ${ultimo_val_liq:,.0f} | Variación (Líq.): ${variacion_liq:,.0f} ({var_pct_liq:+.1f}%)"
+
+            tk.Label(section_chart, text=stats_text, font=('Arial', 10, 'bold'), bg='white', fg='#2c3e50').pack(pady=(6, 0))
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
@@ -505,7 +625,7 @@ class CompensaViewer:
         df_ordenado = df_persona.sort_values(["Año", "Mes"], ascending=False)
         for _, row in df_ordenado.iterrows():
             sueldo_base = f"${row['Sueldo_Base']:,.0f}" if pd.notna(row.get('Sueldo_Base')) else "N/A"
-            sueldo_liquido = f"${row['Sueldo_Base_Liquidacion']:,.0f}" if pd.notna(row.get('Sueldo_Base_Liquidacion')) else "N/A"
+            sueldo_liquido = f"${row['sueldo_base']:,.0f}" if pd.notna(row.get('sueldo_base')) else "N/A"
             anos_servicio = f"{row['Años_de_Servicio']:.1f}" if pd.notna(row.get('Años_de_Servicio')) else "N/A"
             tree.insert("", "end", values=(
                 row.get("Período", ""),
@@ -572,11 +692,11 @@ class CompensaViewer:
                 # Agrupar por período
                 df_grouped = df.groupby("Período").agg({
                     "Sueldo_Base": "mean",
-                    "Sueldo_Base_Liquidacion": "mean",
+                    "sueldo_base": "mean",
                     "person_id": "nunique"
                 }).reset_index()
                 ax.plot(df_grouped["Período"], df_grouped["Sueldo_Base"], marker='o', linewidth=2, label="Sueldo Teórico Promedio")
-                ax.plot(df_grouped["Período"], df_grouped["Sueldo_Base_Liquidacion"], marker='s', linewidth=2, label="Sueldo Liquidación Promedio")
+                ax.plot(df_grouped["Período"], df_grouped["sueldo_base"], marker='s', linewidth=2, label="Sueldo Liquidación Promedio")
                 ax.set_title(f"Evolución Salarial Promedio - {area_var.get()}", fontsize=14, fontweight='bold')
             else:
                 messagebox.showwarning("Filtro", "Selecciona un área.")
@@ -628,9 +748,9 @@ class CompensaViewer:
         resumen = df_ultimo.groupby('Nombre_Area').agg({
             'person_id': 'nunique',
             'Sueldo_Base': 'mean',
-            'Sueldo_Base_Liquidacion': 'mean'
+            'sueldo_base': 'mean'
         }).reset_index()
-        resumen['Diferencia'] = resumen['Sueldo_Base'] - resumen['Sueldo_Base_Liquidacion']
+        resumen['Diferencia'] = resumen['Sueldo_Base'] - resumen['sueldo_base']
 
         # Llenar treeview
         for _, row in resumen.iterrows():
@@ -638,7 +758,7 @@ class CompensaViewer:
                 row['Nombre_Area'],
                 int(row['person_id']),
                 f"${row['Sueldo_Base']:,.0f}",
-                f"${row['Sueldo_Base_Liquidacion']:,.0f}",
+                f"${row['sueldo_base']:,.0f}",
                 f"${row['Diferencia']:,.0f}"
             ))
         tree.pack(fill='both', expand=True, padx=20, pady=10)
