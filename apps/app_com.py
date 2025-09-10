@@ -14,16 +14,16 @@ from datetime import datetime
 # Config BD
 # ----------------------------------------------------------
 # Config BD - Windows
-DB_HOST = "192.168.245.33"
-DB_USER = "compensaciones_rrhh"
-DB_PASSWORD = "_Cramercomp2025_"
-DB_NAME = "rrhh_app"
+# DB_HOST = "192.168.245.33"
+# DB_USER = "compensaciones_rrhh"
+# DB_PASSWORD = "_Cramercomp2025_"
+# DB_NAME = "rrhh_app"
 
 # Config BD - mac (ejemplo, comentado)
-# DB_HOST = "localhost"
-# DB_USER = "root"
-# DB_PASSWORD = "cancionanimal"
-# DB_NAME = "conexion_buk"
+DB_HOST = "localhost"
+DB_USER = "root"
+DB_PASSWORD = "cancionanimal"
+DB_NAME = "conexion_buk"
 
 
 class CompensaViewer:
@@ -60,11 +60,10 @@ class CompensaViewer:
 
     def obtener_datos(self):
         """Obtiene datos con info de jefatura, cargo y sueldo desde employees_jobs"""
-        conn = self.conectar_bd()
-        if not conn:
+        conexion = self.conectar_bd()
+        if not conexion:
             return pd.DataFrame()
         try:
-            # Query optimizada para obtener datos esenciales
             query = """
             SELECT
                 e.person_id,
@@ -99,7 +98,7 @@ class CompensaViewer:
             ORDER BY e.full_name, ej.start_date;
 
             """
-            df = pd.read_sql(query, conn)
+            df = pd.read_sql(query, conexion)
             if not df.empty:
                 # Crear las columnas de fecha
                 df['active_since'] = pd.to_datetime(df['active_since'], errors='coerce')
@@ -108,19 +107,18 @@ class CompensaViewer:
                 # Calcular Años_de_Servicio usando active_since (es la antigüedad del empleado)
                 df["Años_de_Servicio"] = (pd.to_datetime("today").year - df["active_since"].dt.year).fillna(0)
 
-                # >>> CAMBIO IMPORTANTE AQUÍ <<<
-                # Para la evolución salarial, Período, Año y Mes deben basarse en start_date del rol
                 df['Período'] = df['start_date'].dt.to_period('M').astype(str)
                 df['Año'] = df['start_date'].dt.year
                 df['Mes'] = df['start_date'].dt.month
 
                 df['sueldo_base'] = df['Sueldo_Base']
-            conn.close()
+                
+            conexion.close()
             return df
         except Exception as e:
             messagebox.showerror("Error SQL", f"Error consultando datos:\n{e}")
             try:
-                conn.close()
+                conexion.close()
             except:
                 pass
             return pd.DataFrame()
@@ -169,7 +167,6 @@ class CompensaViewer:
             df_liquidaciones = pd.read_sql(query, conn)
             if not df_liquidaciones.empty:
                 df_liquidaciones['Pay_Period'] = pd.to_datetime(df_liquidaciones['Pay_Period'], errors='coerce')
-                # Creamos el Periodo para hacer join o filtrar
                 df_liquidaciones['Periodo_Liquidacion'] = df_liquidaciones['Pay_Period'].dt.to_period('M').astype(str)
                 
                 df_liquidaciones = df_liquidaciones.dropna(subset=['Pay_Period', 'rut', 'Liquido_a_Pagar'])
@@ -200,9 +197,10 @@ class CompensaViewer:
 
         # Sección métricas
         self.crear_seccion_metricas(main_frame)
-        # Sección filtros + tabla
         
+        # Sección filtros + tabla
         self.crear_seccion_principal(main_frame)
+        
         # Sección acciones
         #self.crear_seccion_acciones(main_frame)
 
@@ -246,40 +244,43 @@ class CompensaViewer:
         # Primera fila de filtros
         fila1 = tk.Frame(filtros_frame, bg='#ecf0f1')
         fila1.pack(fill='x', pady=2)
-        tk.Label(fila1, text="Período:", bg='#ecf0f1').pack(side='left', padx=5)
-        self.periodo_var = tk.StringVar(value="Todos")
-        self.periodo_combo = ttk.Combobox(fila1, textvariable=self.periodo_var, state="readonly", width=12)
-        self.periodo_combo.pack(side='left', padx=5)
+        
+        #label período
+        # tk.Label(fila1, text="Período:", bg='#ecf0f1').pack(side='left', padx=5)
+        # self.periodo_var = tk.StringVar(value="Todos")
+        # self.periodo_combo = ttk.Combobox(fila1, textvariable=self.periodo_var, state="readonly", width=12)
+        # self.periodo_combo.pack(side='left', padx=5)
+        
+        #label área
         tk.Label(fila1, text="Área:", bg='#ecf0f1').pack(side='left', padx=5)
         self.area_var = tk.StringVar(value="Todos")
         self.area_combo = ttk.Combobox(fila1, textvariable=self.area_var, state="readonly", width=20)
         self.area_combo.pack(side='left', padx=5)
-
-        # Sección de acciones
-        acciones_frame = tk.LabelFrame(main_split, text="Acciones", font=('Arial', 12, 'bold'), bg='#ecf0f1', fg='#2c3e50', padx=8, pady=8)
-        acciones_frame.pack(fill='x', pady=(8, 0))
-
-        self.btn_comparar = tk.Button(acciones_frame, text="Comparar Seleccionados",
-                                    command=self.comparar_seleccionados,
-                                    state='disabled', # Deshabilitado por defecto
-                                    bg='#2980b9', fg='white', font=('Arial', 10, 'bold'),
+        
+        #boton comparar
+        self.btn_comparar = tk.Button(fila1, text="Comparar Seleccionados", command=self.comparar_seleccionados,
+                                    state='disabled', bg='#2980b9', fg='white', font=('Arial', 10, 'bold'),
                                     relief='flat', padx=15, pady=5)
-        self.btn_comparar.pack(side='left', padx=10)
-
+        self.btn_comparar.pack(side='right', padx=10)
+                                                                                    
         # Segunda fila de filtros
         fila2 = tk.Frame(filtros_frame, bg='#ecf0f1')
         fila2.pack(fill='x', pady=5)
+        
         # Búsqueda por nombre o rut
         tk.Label(fila2, text="Buscar por Nombre/rut:", bg='#ecf0f1').pack(side='left', padx=5)
         self.search_name_var = tk.StringVar()
         self.search_name_entry = ttk.Entry(fila2, textvariable=self.search_name_var, width=30)
         self.search_name_entry.pack(side='left', padx=5)
+        self.search_name_entry.bind('<KeyRelease>', lambda event: self.actualizar_tabla())
+        
         # Búsqueda por cargo
         tk.Label(fila2, text="Buscar por Cargo:", bg='#ecf0f1').pack(side='left', padx=10)
         self.search_cargo_var = tk.StringVar()
         self.search_cargo_entry = ttk.Entry(fila2, textvariable=self.search_cargo_var, width=20)
         self.search_cargo_entry.pack(side='left', padx=5)
         self.search_cargo_entry.bind('<KeyRelease>', lambda event: self.actualizar_tabla())
+        
         # Búsqueda por Jefatura
         tk.Label(fila2, text="Buscar por Jefatura:", bg='#ecf0f1').pack(side='left', padx=10)
         self.search_jefatura_var = tk.StringVar()
@@ -287,10 +288,9 @@ class CompensaViewer:
         self.search_jefatura_entry.pack(side='left', padx=5)
         self.search_jefatura_entry.bind('<KeyRelease>', lambda event: self.actualizar_tabla())
 
-        # Bind para búsqueda en tiempo real
-        self.search_name_entry.bind('<KeyRelease>', lambda event: self.actualizar_tabla())
-        tk.Button(fila2, text="Filtrar", command=self.actualizar_tabla, bg='#27ae60', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=10)
-        tk.Button(fila2, text="Limpiar", command=self.limpiar_filtros, bg='#95a5a6', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
+        # botones filtrar y limpiar
+        #tk.Button(fila2, text="Filtrar", command=self.actualizar_tabla, bg='#27ae60', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=10)
+        tk.Button(fila2, text="Limpiar", command=self.limpiar_filtros, bg='#95a5a6', fg='white', font=('Arial', 10, 'bold')).pack(side='right', padx=5)
 
         # Tabla
         tabla_frame = tk.Frame(main_split, bg='#ecf0f1')
@@ -336,22 +336,23 @@ class CompensaViewer:
     #     tk.Button(btn_frame, text="📊 Resumen por Área", command=self.mostrar_resumen_areas, bg='#e67e22', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
     #     tk.Button(btn_frame, text="📥 Exportar a Excel", command=self.exportar_excel, bg='#16a085', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
 
+
     # ------------------------------------------------------
     # Funciones principales
     # ------------------------------------------------------
     def cargar_datos(self):
         self.data_df = self.obtener_datos()
         self.employees_df = self.obtener_datos_empleados()
-        self.settlements_df = self.obtener_datos_liquidaciones() # <<--- Nueva línea para cargar liquidaciones
+        self.settlements_df = self.obtener_datos_liquidaciones()
 
         if self.data_df is None or self.data_df.empty:
             messagebox.showwarning("Sin datos", "No se encontraron datos en la base.")
             return
 
         # Poblar combos dinámicos
-        periodos = sorted(self.data_df["Período"].dropna().unique())
+        #periodos = sorted(self.data_df["Período"].dropna().unique())
         areas = sorted(self.data_df["Nombre_Area"].dropna().unique())
-        self.periodo_combo['values'] = ["Todos"] + periodos
+        #self.periodo_combo['values'] = ["Todos"] + periodos
         self.area_combo['values'] = ["Todos"] + areas
 
         # Actualizar métricas y tabla
@@ -360,8 +361,8 @@ class CompensaViewer:
 
     def aplicar_filtros(self, df):
         # Filtro por período
-        if self.periodo_var.get() != "Todos":
-            df = df[df["Período"] == self.periodo_var.get()]
+        # if self.periodo_var.get() != "Todos":
+        #     df = df[df["Período"] == self.periodo_var.get()]
         # Filtro por área
         if self.area_var.get() != "Todos":
             df = df[df["Nombre_Area"] == self.area_var.get()]
@@ -369,10 +370,10 @@ class CompensaViewer:
         search_term = self.search_name_var.get().strip()
         if search_term and not df.empty:
             palabras = search_term.lower().split()
-            # Buscar en nombre (todas las palabras) O en rut (contiene)
             mask_nombre = df["Nombre"].str.lower().apply(lambda x: all(p in x for p in palabras) if isinstance(x, str) else False)
             mask_rut = df["rut"].str.contains(search_term, case=False, na=False)
             df = df[mask_nombre | mask_rut]
+        # Búsqueda por Cargo
         search_cargo_term = self.search_cargo_var.get().strip()
         if search_cargo_term and not df.empty:
             df = df[df["Cargo_Actual"].str.contains(search_cargo_term, case=False, na=False)]
@@ -386,7 +387,7 @@ class CompensaViewer:
 
     def limpiar_filtros(self):
         """Limpia todos los filtros"""
-        self.periodo_var.set("Todos")
+        #self.periodo_var.set("Todos")
         self.area_var.set("Todos")
         self.search_name_var.set("")
         self.search_cargo_var.set("")
@@ -407,48 +408,17 @@ class CompensaViewer:
         if len(seleccionados) < 2:
             messagebox.showwarning("Selección mínima", "Por favor, selecciona al menos dos personas para comparar.")
             return
-
-        # Para obtener los datos de la fila, necesitamos el RUT, que no está visible
-        # en tu tabla actual. El RUT es la primera columna en el DataFrame.
-        # Asumiré que el RUT está disponible en la fila de datos del Treeview
-        # al momento de insertarla.
-
-        # Ejemplo de cómo obtener el RUT de la fila seleccionada
-        # (requiere que el RUT sea parte de los 'values' de la fila insertada)
         ruts_a_comparar = []
         for item in seleccionados:
             valores_fila = self.tree.item(item, 'values')
-            # Necesitas asegurarte de que el RUT esté en una posición conocida.
-            # En tu código actual, los valores son: Nombre, Cargo, Jefatura, Sueldo Base, Años.
-            # No se está insertando el RUT.
-
-            # SOLUCIÓN: El Treeview de tkinter permite almacenar un valor oculto llamado 'iid' (índice interno).
-            # Podemos usar el 'iid' como el RUT para cada fila para recuperarlo luego.
-            # O mejor aún, insertar el RUT como el 'text' de la fila, que es invisible.
-
-        # La implementación más robusta es obtener la información de la fila
-        # del Treeview y luego buscar el RUT correspondiente en tu DataFrame original.
+            
         nombres_seleccionados = [self.tree.item(item, 'values')[0] for item in seleccionados]
 
         # Filtramos el DataFrame original para obtener los RUTs de los seleccionados
         df_filtrado_para_ruts = self.data_df[self.data_df['Nombre'].isin(nombres_seleccionados)].copy()
 
-        # Ojo: esto podría traer más de un registro por persona si hay cambios de cargo/sueldo.
-        # Es mejor usar la lista de 'person_id' o 'rut' si los insertas en el Treeview.
-        # Sugerencia: En la línea self.tree.insert, inserta el RUT en la columna oculta 'text'
-        # self.tree.insert("", "end", text=row.get("rut", ""), values=(...))
-        # Y luego en esta función lo recuperas con self.tree.item(item, "text")
+        #messagebox.showinfo("Prueba de Comparación", f"Empleados seleccionados para comparar:\n{nombres_seleccionados}")
 
-        # Esto se abordará en detalle en la segunda parte de la solución
-        # cuando se implemente la ventana de comparación.
-
-        messagebox.showinfo("Prueba de Comparación", f"Empleados seleccionados para comparar:\n{nombres_seleccionados}")
-
-        # Aquí llamarías a la función `mostrar_comparativa(ruts_a_comparar)`
-        # que implementaremos en la siguiente fase.
-    #------------------------------------------------------
-    # Funciones para la Comparación
-    #------------------------------------------------------
     def comparar_seleccionados(self):
         """
         Recupera los RUTs de los empleados seleccionados y llama a la función de comparación.
@@ -460,7 +430,6 @@ class CompensaViewer:
 
         ruts_a_comparar = []
         for item in seleccionados:
-            # El RUT ya se encuentra en el índice 0 de los valores de la fila.
             rut = self.tree.item(item, "values")[0]
             ruts_a_comparar.append(rut)
             
@@ -473,7 +442,7 @@ class CompensaViewer:
         Crea la ventana de comparación para los empleados con los RUTs proporcionados.
         """
         win = tk.Toplevel(self.root)
-        win.title("📊 Comparativa de Empleados")
+        win.title("Comparativa de Empleados")
         win.geometry("1400x800+50+50")
         win.configure(bg='#f8f9fa')
         
@@ -577,11 +546,11 @@ class CompensaViewer:
                     marker='o', linestyle='-', color=colores(i), label=f'{nombre} (Base)')
             
             # Trazar sueldo líquido si está disponible
-            df_liquidaciones_persona = self.settlements_df[self.settlements_df["rut"] == rut].copy()
-            if not df_liquidaciones_persona.empty:
-                df_liquidaciones_persona.set_index('Pay_Period', inplace=True)
-                ax.plot(df_liquidaciones_persona.index, df_liquidaciones_persona['Liquido_a_Pagar'], 
-                        marker='s', linestyle='--', color=colores(i), label=f'{nombre} (Líq.)')
+            # df_liquidaciones_persona = self.settlements_df[self.settlements_df["rut"] == rut].copy()
+            # if not df_liquidaciones_persona.empty:
+            #     df_liquidaciones_persona.set_index('Pay_Period', inplace=True)
+            #     ax.plot(df_liquidaciones_persona.index, df_liquidaciones_persona['Liquido_a_Pagar'], 
+            #             marker='s', linestyle='--', color=colores(i), label=f'{nombre} (Líq.)')
 
         # Configuración del gráfico
         ax.legend(fontsize=8, loc='upper left')
@@ -600,14 +569,13 @@ class CompensaViewer:
         canvas_chart.get_tk_widget().pack(fill='both', expand=True)
         
         # Agregar una breve descripción de las métricas
-        stats_text = "Se compara el Sueldo Base (línea continua) y el Sueldo Líquido (línea discontinua) para cada empleado seleccionado."
+        stats_text = "Se compara el Sueldo Base para cada empleado seleccionado."
         tk.Label(parent_frame, text=stats_text, font=('Arial', 10), bg='white', fg='#2c3e50').pack(pady=(6, 0))
 
 
     def actualizar_metricas(self):
         if self.data_df is None or self.data_df.empty:
             return
-        # Usar solo último registro por persona para métricas
         df_ultimo = self.data_df.sort_values(["person_id", "Año", "Mes"]).groupby("person_id").tail(1)
         df_filtrado = self.aplicar_filtros(df_ultimo)
         total = len(df_filtrado) if not df_filtrado.empty else 0
@@ -682,9 +650,6 @@ class CompensaViewer:
             if not df_liquidaciones_persona.empty:
                 df_liquidaciones_persona.set_index('Pay_Period', inplace=True)
 
-        # ----------------- CAMBIO CLAVE AQUÍ -----------------
-        # Define la fecha de inicio del gráfico como 'active_since' del empleado
-        # Si no existe, usa la fecha de inicio de datos disponible
         active_since = df_persona_base['active_since'].min()
         start_date = active_since if pd.notna(active_since) else df_persona_base.index.min()
         
@@ -735,7 +700,7 @@ class CompensaViewer:
     def crear_pestaña_datos_generales(self, notebook, df_persona, emp_info):
         """Pestaña compacta de datos + gráfico de evolución abajo"""
         frame = ttk.Frame(notebook)
-        notebook.add(frame, text="📋 Datos + Evolución")
+        notebook.add(frame, text="Datos + Evolución")
 
         # Contenedor con scroll por si hay pantallas más pequeñas
         canvas = tk.Canvas(frame, bg='#f8f9fa', highlightthickness=0)
@@ -799,7 +764,6 @@ class CompensaViewer:
         section_chart = tk.LabelFrame(scrollable_frame, text="Evolución Salarial", font=('Arial', 11, 'bold'), bg='white', fg='#2c3e50', padx=10, pady=10, labelanchor='n')
         section_chart.pack(fill='both', expand=True, padx=8, pady=(6, 10))
         
-        # Usa el dataframe completo sin reindexar, ya que ya tiene la lógica de ffill
         df_sueldo_plot = df_persona.copy()
 
         if df_sueldo_plot.empty:
@@ -874,10 +838,10 @@ class CompensaViewer:
         df_ordenado = df_persona.sort_values(["Año", "Mes"], ascending=False)
         for _, row in df_ordenado.iterrows():
             sueldo_base = f"${row['Sueldo_Base']:,.0f}" if pd.notna(row.get('Sueldo_Base')) else "N/A"
-            sueldo_liquido = f"${row['sueldo_base']:,.0f}" if pd.notna(row.get('sueldo_base')) else "N/A"
+            sueldo_liquido = f"${row['Liquido_a_Pagar']:,.0f}" if pd.notna(row.get('Liquido_a_Pagar')) else "N/A"
             anos_servicio = f"{row['Años_de_Servicio']:.1f}" if pd.notna(row.get('Años_de_Servicio')) else "N/A"
             tree.insert("", "end", values=(
-                row.get("Período", ""),
+                row.get("Pay_Period", ""),
                 row.get("Cargo_Actual", ""),
                 row.get("Nombre_Area", ""),
                 sueldo_base,
