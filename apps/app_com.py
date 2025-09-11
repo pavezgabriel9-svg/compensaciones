@@ -2,7 +2,7 @@
 # Importaciones
 # -----------------------------------------------------------
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, Toplevel
 import pymysql
 import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -14,16 +14,16 @@ from datetime import datetime
 # Config BD
 # ----------------------------------------------------------
 # Config BD - Windows
-# DB_HOST = "192.168.245.33"
-# DB_USER = "compensaciones_rrhh"
-# DB_PASSWORD = "_Cramercomp2025_"
-# DB_NAME = "rrhh_app"
+DB_HOST = "192.168.245.33"
+DB_USER = "compensaciones_rrhh"
+DB_PASSWORD = "_Cramercomp2025_"
+DB_NAME = "rrhh_app"
 
 # Config BD - mac (ejemplo, comentado)
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "cancionanimal"
-DB_NAME = "conexion_buk"
+# DB_HOST = "localhost"
+# DB_USER = "root"
+# DB_PASSWORD = "cancionanimal"
+# DB_NAME = "conexion_buk"
 
 
 class CompensaViewer:
@@ -32,16 +32,361 @@ class CompensaViewer:
         self._configurar_ventana()
         self.data_df = None
         self.employees_df = None
-        self.settlements_df = None 
-        self.setup_ui()
+        self.settlements_df = None
+        self.groups_df = None
+        self.setup_ui() 
         self.cargar_datos()
-
+        self._actualizar_tabla_grupos()  
+        
     def _configurar_ventana(self):
         self.root.title("Dashboard de Compensaciones")
         self.root.minsize(1300, 750)
-        self.root.geometry("1350x800+50+50")
         self.root.configure(bg='#ecf0f1')
 
+    def obtener_conexion(self):
+        """Establece y retorna la conexión a la base de datos"""
+        try:
+            return pymysql.connect(
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME
+            )
+        except pymysql.MySQLError as e:
+            messagebox.showerror("Error de Conexión", f"No se pudo conectar a la base de datos: {e}")
+            return None
+
+    def cargar_datos(self):
+        """Carga los datos iniciales de todas las tablas necesarias."""
+        conn = self.obtener_conexion()
+        if conn:
+            try:
+                self.employees_df = pd.read_sql("SELECT * FROM employees", conn)
+                self.settlements_df = pd.read_sql("SELECT * FROM historical_settlements", conn)
+                self.groups_df = pd.read_sql("SELECT * FROM groups_table", conn)
+                
+                self.data_df = pd.merge(self.employees_df, self.settlements_df, on='rut', how='left')
+                
+                self.data_df['antiguedad_dias'] = (datetime.now() - pd.to_datetime(self.data_df['fecha_ingreso'])).dt.days
+                self.actualizar_dashboard(self.data_df)
+                # Añadir esta línea para actualizar la tabla de grupos
+                self._actualizar_tabla_grupos()
+                messagebox.showinfo("Datos Cargados", "Datos de empleados, liquidaciones y grupos cargados exitosamente.")
+            except pymysql.MySQLError as e:
+                messagebox.showerror("Error de Carga", f"No se pudieron cargar los datos: {e}")
+            finally:
+                conn.close()
+        
+    def actualizar_dashboard(self, df):
+        """Actualiza todos los elementos del dashboard con los datos cargados"""
+        if df is None or df.empty:
+            messagebox.showwarning("Sin datos", "No se encontraron datos para mostrar en el dashboard.")
+            return
+            
+        # Actualizar métricas
+        self.actualizar_metricas()
+        
+        # Actualizar tabla
+        self.actualizar_tabla()
+        
+        # Si tienes más elementos en el dashboard que necesiten actualizarse,
+        # como gráficos o indicadores adicionales, actualízalos aquí
+
+    # --- Funciones de Backend para Grupos ---
+    def crear_grupo(self, nombre_grupo, descripcion):
+        conn = self.obtener_conexion()
+        if conn:
+            cursor = conn.cursor()
+            try:
+                query = "INSERT INTO groups_table (group_name, group_description) VALUES (%s, %s)"
+                cursor.execute(query, (nombre_grupo, descripcion))
+                conn.commit()
+                messagebox.showinfo("Éxito", f"Grupo '{nombre_grupo}' creado exitosamente.")
+                
+                # Actualizar el DataFrame de grupos después de crear uno nuevo
+                self.groups_df = pd.read_sql("SELECT * FROM groups_table", conn)
+                
+                self._actualizar_tabla_grupos()
+                return True
+            except pymysql.MySQLError as e:
+                messagebox.showerror("Error", f"No se pudo crear el grupo: {e}")
+                return False
+            finally:
+                conn.close()
+    
+    def agregar_empleado_a_grupo(self, group_id, rut_empleado):
+        conn = self.obtener_conexion()
+        if conn:
+            cursor = conn.cursor()
+            try:
+                query = "INSERT INTO employees_group (group_id, rut) VALUES (%s, %s)"
+                cursor.execute(query, (group_id, rut_empleado))
+                conn.commit()
+                return True
+            except pymysql.MySQLError as e:
+                messagebox.showerror("Error", f"No se pudo agregar el empleado al grupo: {e}")
+                return False
+            finally:
+                conn.close()
+
+    def obtener_empleados_por_grupo(self, group_id):
+        conn = self.obtener_conexion()
+        if conn:
+            try:
+                query = """
+                SELECT t1.*
+                FROM employees AS t1
+                JOIN employees_group AS t2 ON t1.rut = t2.rut
+                WHERE t2.group_id = %s
+                """
+                return pd.read_sql(query, conn, params=(group_id,))
+            except pymysql.MySQLError as e:
+                messagebox.showerror("Error", f"No se pudieron obtener los empleados del grupo: {e}")
+                return pd.DataFrame()
+            finally:
+                conn.close()
+        return pd.DataFrame()
+        
+    def eliminar_empleado_de_grupo(self, group_id, rut_empleado):
+        conn = self.obtener_conexion()
+        if conn:
+            cursor = conn.cursor()
+            try:
+                query = "DELETE FROM employees_group WHERE group_id = %s AND rut = %s"
+                cursor.execute(query, (group_id, rut_empleado))
+                conn.commit()
+                messagebox.showinfo("Éxito", "Empleado eliminado del grupo exitosamente.")
+                self.cargar_datos()
+                return True
+            except pymysql.MySQLError as e:
+                messagebox.showerror("Error", f"No se pudo eliminar el empleado del grupo: {e}")
+                return False
+            finally:
+                conn.close()
+
+    def eliminar_grupo(self, group_id):
+        conn = self.obtener_conexion()
+        if conn:
+            cursor = conn.cursor()
+            try:
+                query = "DELETE FROM groups_table WHERE group_id = %s"
+                cursor.execute(query, (group_id,))
+                conn.commit()
+                messagebox.showinfo("Éxito", "Grupo eliminado exitosamente.")
+                
+                # Actualizar el DataFrame de grupos después de eliminar uno
+                self.groups_df = pd.read_sql("SELECT * FROM groups_table", conn)
+                
+                self._actualizar_tabla_grupos()
+                return True
+            except pymysql.MySQLError as e:
+                messagebox.showerror("Error", f"No se pudo eliminar el grupo: {e}")
+                return False
+            finally:
+                conn.close()
+
+    # --- Configuración de la UI ---
+    def setup_ui(self):
+        style = ttk.Style()
+        style.configure("TNotebook", background='#ecf0f1')
+        style.configure("TNotebook.Tab", padding=[15, 5])
+        style.configure("TFrame", background='#ecf0f1')
+        style.configure("TButton", font=('Arial', 10, 'bold'), relief='flat', background='#3498db', foreground='white')
+        style.map("TButton", background=[('active', '#2980b9')])
+
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Dashboard Tab
+        self.dashboard_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.dashboard_frame, text="Dashboard")
+        self._setup_dashboard_ui()
+
+        # Group Management Tab
+        self.group_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.group_frame, text="Gestión de Grupos")
+        self._setup_group_ui()
+
+    def _setup_dashboard_ui(self):
+        # Main Frame inside Dashboard tab
+        main_frame = tk.Frame(self.dashboard_frame, bg='#ecf0f1')
+        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Sección métricas
+        self.crear_seccion_metricas(main_frame)
+        
+        # Sección filtros + tabla
+        self.crear_seccion_principal(main_frame)
+
+    def _setup_group_ui(self):
+        # Frame para la creación de grupos
+        creation_frame = ttk.Frame(self.group_frame, padding=10)
+        creation_frame.pack(fill='x', padx=10, pady=10)
+
+        ttk.Label(creation_frame, text="Crear Nuevo Grupo", font=('Arial', 12, 'bold')).pack(pady=5)
+        
+        ttk.Label(creation_frame, text="Nombre del Grupo:").pack(anchor='w', padx=5)
+        self.group_name_entry = ttk.Entry(creation_frame, width=40)
+        self.group_name_entry.pack(fill='x', padx=5)
+        
+        ttk.Label(creation_frame, text="Descripción:").pack(anchor='w', padx=5)
+        self.group_desc_entry = ttk.Entry(creation_frame, width=40)
+        self.group_desc_entry.pack(fill='x', padx=5)
+        
+        ttk.Button(creation_frame, text="Crear Grupo", command=self._crear_grupo_ui).pack(pady=10)
+
+        # Frame para mostrar los grupos
+        view_frame = ttk.Frame(self.group_frame, padding=10)
+        view_frame.pack(fill='both', expand=True, padx=10, pady=10)
+
+        ttk.Label(view_frame, text="Grupos Existentes", font=('Arial', 12, 'bold')).pack(pady=5)
+        
+        self.groups_tree = ttk.Treeview(view_frame, columns=('group_id', 'group_name'), show='headings')
+        self.groups_tree.heading('group_id', text='ID')
+        self.groups_tree.column('group_id', width=50, stretch=tk.NO)
+        self.groups_tree.heading('group_name', text='Nombre del Grupo')
+        self.groups_tree.column('group_name', width=250, stretch=tk.YES)
+        self.groups_tree.pack(fill='both', expand=True)
+
+        self.groups_tree.bind('<<TreeviewSelect>>', self._on_group_select)
+
+        # Frame para botones de acción de grupo
+        action_frame = ttk.Frame(view_frame)
+        action_frame.pack(pady=5)
+        ttk.Button(action_frame, text="❌ Eliminar Grupo", command=self._eliminar_grupo_ui).pack(side='left', padx=5)
+        ttk.Button(action_frame, text="➕ Agregar/Eliminar Empleados", command=self._gestionar_empleados_grupo_ui).pack(side='left', padx=5)
+        
+        self._actualizar_tabla_grupos()
+
+    def _crear_grupo_ui(self):
+        """Función que maneja la creación de un grupo desde la UI."""
+        nombre = self.group_name_entry.get()
+        descripcion = self.group_desc_entry.get()
+        if not nombre:
+            messagebox.showwarning("Advertencia", "El nombre del grupo no puede estar vacío.")
+            return
+        self.crear_grupo(nombre, descripcion)
+        self.group_name_entry.delete(0, tk.END)
+        self.group_desc_entry.delete(0, tk.END)
+
+    def _eliminar_grupo_ui(self):
+        """Función que maneja la eliminación de un grupo desde la UI."""
+        selected_item = self.groups_tree.focus()
+        if not selected_item:
+            messagebox.showwarning("Advertencia", "Por favor, selecciona un grupo para eliminar.")
+            return
+        group_id = self.groups_tree.item(selected_item, 'values')[0]
+        if messagebox.askyesno("Confirmar Eliminación", "¿Estás seguro de que quieres eliminar este grupo?"):
+            self.eliminar_grupo(group_id)
+
+    def _on_group_select(self, event):
+        """Maneja la selección de un grupo en la tabla."""
+        selected_item = self.groups_tree.focus()
+        if selected_item:
+            # Obtiene el ID del grupo seleccionado
+            self.selected_group_id = self.groups_tree.item(selected_item, 'values')[0]
+        else:
+            self.selected_group_id = None
+    
+    def _actualizar_tabla_grupos(self):
+        """Actualiza la tabla de grupos con los datos de la base de datos."""
+        for item in self.groups_tree.get_children():
+            self.groups_tree.delete(item)
+        if self.groups_df is not None and not self.groups_df.empty:
+            for _, row in self.groups_df.iterrows():
+                self.groups_tree.insert('', 'end', values=(row['group_id'], row['group_name']))
+
+    def _gestionar_empleados_grupo_ui(self):
+        """Abre una nueva ventana para gestionar los empleados de un grupo."""
+        selected_item = self.groups_tree.focus()
+        if not selected_item:
+            messagebox.showwarning("Advertencia", "Por favor, selecciona un grupo para gestionar sus empleados.")
+            return
+        
+        group_id = self.groups_tree.item(selected_item, 'values')[0]
+        group_name = self.groups_tree.item(selected_item, 'values')[1]
+
+        win = Toplevel(self.root)
+        win.title(f"Gestión de Empleados para '{group_name}'")
+        win.geometry("800x600")
+
+        # Frame principal
+        main_frame = ttk.Frame(win, padding=10)
+        main_frame.pack(fill='both', expand=True)
+
+        # Tablas de empleados
+        empleados_frame = ttk.Frame(main_frame)
+        empleados_frame.pack(fill='both', expand=True)
+
+        # Tabla de todos los empleados
+        ttk.Label(empleados_frame, text="Todos los Empleados", font=('Arial', 11, 'bold')).pack(pady=5)
+        self.all_employees_tree = ttk.Treeview(empleados_frame, columns=('rut', 'nombre', 'cargo'), show='headings')
+        self.all_employees_tree.heading('rut', text='RUT')
+        self.all_employees_tree.heading('nombre', text='Nombre')
+        self.all_employees_tree.heading('cargo', text='Cargo')
+        self.all_employees_tree.pack(fill='both', expand=True, side='left', padx=5)
+
+        # Tabla de empleados en el grupo
+        ttk.Label(empleados_frame, text="Empleados en el Grupo", font=('Arial', 11, 'bold')).pack(pady=5)
+        self.group_employees_tree = ttk.Treeview(empleados_frame, columns=('rut', 'nombre', 'cargo'), show='headings')
+        self.group_employees_tree.heading('rut', text='RUT')
+        self.group_employees_tree.heading('nombre', text='Nombre')
+        self.group_employees_tree.heading('cargo', text='Cargo')
+        self.group_employees_tree.pack(fill='both', expand=True, side='right', padx=5)
+        
+        # Botones de acción
+        action_buttons_frame = ttk.Frame(win, padding=10)
+        action_buttons_frame.pack(fill='x', padx=10, pady=5)
+        
+        ttk.Button(action_buttons_frame, text="➡ Agregar Seleccionado", command=lambda: self._agregar_empleado_a_grupo_ui(group_id)).pack(side='left', padx=5)
+        ttk.Button(action_buttons_frame, text="⬅ Quitar Seleccionado", command=lambda: self._quitar_empleado_de_grupo_ui(group_id)).pack(side='right', padx=5)
+        
+        # Cargar datos en las tablas de la ventana emergente
+        self._actualizar_tablas_gestion_empleados(group_id)
+
+    def _actualizar_tablas_gestion_empleados(self, group_id):
+        """Actualiza las tablas de gestión de empleados."""
+        # Limpiar tablas
+        for item in self.all_employees_tree.get_children():
+            self.all_employees_tree.delete(item)
+        for item in self.group_employees_tree.get_children():
+            self.group_employees_tree.delete(item)
+
+        # Obtener datos de empleados del grupo
+        empleados_en_grupo = self.obtener_empleados_por_grupo(group_id)
+        ruts_en_grupo = set(empleados_en_grupo['rut'])
+
+        # Llenar la tabla de empleados en el grupo
+        if not empleados_en_grupo.empty:
+            for _, row in empleados_en_grupo.iterrows():
+                self.group_employees_tree.insert('', 'end', values=(row['rut'], row['nombre_completo'], row['cargo']))
+
+        # Llenar la tabla de todos los empleados (excluyendo los que ya están en el grupo)
+        if self.employees_df is not None and not self.employees_df.empty:
+            for _, row in self.employees_df.iterrows():
+                if row['rut'] not in ruts_en_grupo:
+                    self.all_employees_tree.insert('', 'end', values=(row['rut'], row['nombre_completo'], row['cargo']))
+
+    def _agregar_empleado_a_grupo_ui(self, group_id):
+        """Maneja la acción de agregar un empleado a un grupo desde la UI."""
+        selected_item = self.all_employees_tree.focus()
+        if not selected_item:
+            messagebox.showwarning("Advertencia", "Por favor, selecciona un empleado de la lista de todos los empleados.")
+            return
+        rut_empleado = self.all_employees_tree.item(selected_item, 'values')[0]
+        if self.agregar_empleado_a_grupo(group_id, rut_empleado):
+            self._actualizar_tablas_gestion_empleados(group_id)
+
+    def _quitar_empleado_de_grupo_ui(self, group_id):
+        """Maneja la acción de quitar un empleado de un grupo desde la UI."""
+        selected_item = self.group_employees_tree.focus()
+        if not selected_item:
+            messagebox.showwarning("Advertencia", "Por favor, selecciona un empleado del grupo para quitarlo.")
+            return
+        rut_empleado = self.group_employees_tree.item(selected_item, 'values')[0]
+        if self.eliminar_empleado_de_grupo(group_id, rut_empleado):
+            self._actualizar_tablas_gestion_empleados(group_id)
+    
     # ------------------------------------------------------
     # Conexion BD
     # ------------------------------------------------------
@@ -184,25 +529,43 @@ class CompensaViewer:
     # ------------------------------------------------------
     # UI principal
     # ------------------------------------------------------
-    def setup_ui(self):
-        # Título barra
-        title_frame = tk.Frame(self.root, bg='#2980b9', height=60)
-        title_frame.pack(fill='x')
-        title_label = tk.Label(title_frame, text="Dashboard de Compensaciones", font=('Arial', 17, 'bold'), fg='white', bg='#2980b9')
-        title_label.pack(expand=True, pady=15)
+    # def setup_ui(self):
+    #     # Configurar estilo del notebook
+    #     style = ttk.Style()
+    #     style.configure("TNotebook", background='#ecf0f1')
+    #     style.configure("TNotebook.Tab", padding=[15, 5])
+    #     style.configure("TFrame", background='#ecf0f1')
+    #     style.configure("TButton", font=('Arial', 10, 'bold'), relief='flat', background='#3498db', foreground='white')
+    #     style.map("TButton", background=[('active', '#2980b9')])
 
-        # Marco principal
-        main_frame = tk.Frame(self.root, bg='#ecf0f1')
-        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+    #     # Título barra
+    #     title_frame = tk.Frame(self.root, bg='#2980b9', height=60)
+    #     title_frame.pack(fill='x')
+    #     title_label = tk.Label(title_frame, text="Dashboard de Compensaciones", font=('Arial', 17, 'bold'), fg='white', bg='#2980b9')
+    #     title_label.pack(expand=True, pady=15)
 
-        # Sección métricas
-        self.crear_seccion_metricas(main_frame)
+    #     # Crear el notebook
+    #     self.notebook = ttk.Notebook(self.root)
+    #     self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+    #     # Dashboard Tab
+    #     self.dashboard_frame = ttk.Frame(self.notebook)
+    #     self.notebook.add(self.dashboard_frame, text="Dashboard")
         
-        # Sección filtros + tabla
-        self.crear_seccion_principal(main_frame)
+    #     # Main Frame inside Dashboard tab
+    #     main_frame = tk.Frame(self.dashboard_frame, bg='#ecf0f1')
+    #     main_frame.pack(fill='both', expand=True, padx=10, pady=10)
         
-        # Sección acciones
-        #self.crear_seccion_acciones(main_frame)
+    #     # Sección métricas
+    #     self.crear_seccion_metricas(main_frame)
+        
+    #     # Sección filtros + tabla
+    #     self.crear_seccion_principal(main_frame)
+
+    #     # Group Management Tab
+    #     self.group_frame = ttk.Frame(self.notebook)
+    #     self.notebook.add(self.group_frame, text="Gestión de Grupos")
+    #     self._setup_group_ui()
 
     # ------------------------------------------------------
     # Sección métricas
@@ -393,6 +756,63 @@ class CompensaViewer:
         self.search_cargo_var.set("")
         self.search_jefatura_var.set("")
         self.actualizar_tabla()
+
+    def comparar_grupos_seleccionados(self):
+        """Compara todos los empleados de los grupos seleccionados."""
+        selected_items = self.groups_tree.selection()
+        if not selected_items:
+            messagebox.showwarning("Advertencia", "Por favor, selecciona al menos un grupo para comparar.")
+            return
+        
+        all_employees_to_compare = pd.DataFrame()
+        for item in selected_items:
+            group_id = self.groups_tree.item(item, 'values')[0]
+            group_employees_df = self.obtener_empleados_por_grupo(group_id)
+            all_employees_to_compare = pd.concat([all_employees_to_compare, group_employees_df])
+            
+        if all_employees_to_compare.empty:
+            messagebox.showwarning("Sin Datos", "Los grupos seleccionados no contienen empleados para comparar.")
+            return
+            
+        # Eliminar duplicados si un empleado está en varios grupos
+        all_employees_to_compare.drop_duplicates(subset=['rut'], inplace=True)
+        
+        self.mostrar_comparacion_sueldos_generico(all_employees_to_compare)
+
+    def mostrar_comparacion_sueldos_generico(self, df_a_comparar):
+        """Muestra el gráfico de comparación de sueldos para un DataFrame dado."""
+        win = Toplevel(self.root)
+        win.title("Comparación de Sueldos")
+        win.geometry("800x600")
+
+        if df_a_comparar.empty:
+            messagebox.showinfo("Sin datos", "No hay datos para comparar.")
+            win.destroy()
+            return
+            
+        # Merge con datos de liquidaciones
+        comparacion_df = pd.merge(df_a_comparar, self.settlements_df, on='rut', how='left')
+        
+        fig, ax = plt.subplots(figsize=(10, 6))
+        for rut in comparacion_df['rut'].unique():
+            df_rut = comparacion_df[comparacion_df['rut'] == rut].sort_values(by='periodo')
+            nombre = df_rut['nombre_completo'].iloc[0] if not df_rut.empty else rut
+            ax.plot(df_rut['periodo'], df_rut['sueldo_liquido'], marker='o', label=nombre)
+
+        ax.set_title('Evolución de Sueldos Líquidos', fontsize=16)
+        ax.set_xlabel('Período')
+        ax.set_ylabel('Sueldo Líquido')
+        ax.grid(True)
+        ax.legend()
+        plt.tight_layout()
+
+        canvas = FigureCanvasTkAgg(fig, master=win)
+        canvas_widget = canvas.get_tk_widget()
+        canvas_widget.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        
+        tk.Button(win, text="❌ Cerrar", command=win.destroy).pack(pady=10)
+
+
 
     def verificar_seleccion_para_comparar(self, event=None):
         """Habilita o deshabilita el botón de comparar según el número de elementos seleccionados."""

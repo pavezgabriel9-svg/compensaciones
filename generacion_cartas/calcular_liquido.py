@@ -29,7 +29,7 @@ def calcular_liquido_desde_base(sueldo_base, tipo_salud="fonasa", valor_isapre_u
     '''
     # Parámetros - agosto 2025
     ingreso_minimo = 529_000
-    uf = 39_383
+    uf = 39_486
     max_imponible_afp_salud = 87.8   # Tope imponible AFP y salud
     max_imponible_seguro_cesantia = 131.8  # Tope imponible Seguro Cesantía
     
@@ -46,7 +46,7 @@ def calcular_liquido_desde_base(sueldo_base, tipo_salud="fonasa", valor_isapre_u
         print(f"Un sueldo base típico está en cientos de miles o millones de pesos.")
     
     # Movilización
-    movilizacion = 375_000  # Haber no imponible
+    movilizacion = 40_000  # Haber no imponible
     
     # Seleccionar tipo de salud
     if tipo_salud.lower() == "isapre":
@@ -151,7 +151,7 @@ def calcular_liquido_desde_base(sueldo_base, tipo_salud="fonasa", valor_isapre_u
 if __name__ == "__main__":
     # Ejemplo con Fonasa
     #print("EJEMPLO CON FONASA:")
-    calcular_liquido_desde_base(1300000, "fonasa")
+    calcular_liquido_desde_base(922_000, "fonasa")
 
     # Ejemplo con Isapre
     # print("EJEMPLO CON ISAPRE:")
