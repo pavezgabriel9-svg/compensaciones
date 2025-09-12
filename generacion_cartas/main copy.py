@@ -419,10 +419,10 @@ for index, row in df.iterrows():
             omitidos += 1
             continue
 
-        # 1. Selección de plantilla ANTES de calcular valores (para preservar valores originales del CSV)
+        #Selección de plantilla ANTES de calcular valores (para preservar valores originales del CSV)
         template_path = seleccionar_plantilla(row_dict)
 
-        # 2. DESPUÉS calcular valores automáticamente desde sueldo_base
+        # DESPUÉS calcular valores automáticamente desde sueldo_base
         sueldo_base = row_dict.get('sueldo_base', 0)
         tipo_movilizacion = row_dict.get('movilizacion', 'Normal')  # Obtener tipo de movilización del CSV
         valores_calculados = calcular_valores_automaticos(sueldo_base, tipo_movilizacion)
@@ -465,12 +465,12 @@ for index, row in df.iterrows():
         # Asegurar que tenemos la fecha actual
         row_dict['fecha'] = datetime.now().strftime("%d/%m/%Y")
 
-        # 3. Cargo y renderizo con la plantilla escogida
+        # Cargo y renderizo con la plantilla escogida
         doc = DocxTemplate(template_path)
         print(f"DEBUG: Datos a renderizar = {row_dict}")
         doc.render(row_dict)
 
-        # 4. Guardar documento
+        # Guardar documento
         filepath = obtener_nombre_disponible(os.path.join(OUTPUT_FOLDER, nombre_archivo_base))
         doc.save(filepath)
         print(f"✓ Documento generado: {os.path.basename(filepath)}")

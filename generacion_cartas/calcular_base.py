@@ -1,24 +1,24 @@
 def impuesto_unico(imponible):
     '''
-    Tramos SII agosto 2025 (pesos mensuales)
+    Tramos SII septiembre 2025 (pesos mensuales)
     '''
     tramos = [
-        #desde, hasta, factor, rebaja
-        (0, 926_734.50, 0.0, 0.0),
-        (926_734.51, 2_059_410.00, 0.04, 37_069.38),
-        (2_059_410.01, 3_432_350.00, 0.08, 119_445.78),
-        (3_432_350.01, 4_805_290.00, 0.135, 308_225.03),
-        (4_805_290.01, 6_178_230.00, 0.23, 764_727.58),
-        (6_178_230.01, 8_237_640.00, 0.304, 1_221_916.60),
-        (8_237_640.01, 21_280_570.00, 0.35, 1_600_848.04),
-        (21_280_570.01, float('inf'), 0.40, 2_664_876.54),
+        # desde, hasta, factor, rebaja
+        (0, 935_077.50, 0.0, 0.0),
+        (935_077.51, 2_077_950.00, 0.04, 37_403.10),
+        (2_077_950.01, 3_463_250.00, 0.08, 120_521.10),
+        (3_463_250.01, 4_848_550.00, 0.135, 310_999.85),
+        (4_848_550.01, 6_233_850.00, 0.23, 771_612.10),
+        (6_233_850.01, 8_311_800.00, 0.304, 1_232_917.00),
+        (8_311_800.01, 21_472_150.00, 0.35, 1_615_259.80),
+        (21_472_150.01, float('inf'), 0.40, 2_688_867.30),
     ]
-    
+
     for desde, hasta, factor, rebaja in tramos:
         if desde <= imponible <= hasta:
-            impuesto = imponible * factor - rebaja
-            return max(impuesto, 0.0)
-    return 0.0
+            impuesto = (imponible * factor) - rebaja
+            return max(0, impuesto)
+    return 0
 
 
 def calcular_sueldo_base(sueldo_liquido_deseado, precision=100, tipo_salud="isapre"):
@@ -165,7 +165,7 @@ def calcular_sueldo_base(sueldo_liquido_deseado, precision=100, tipo_salud="isap
     print(f"\n\n")
     return sueldo_base
 
-calcular_sueldo_base(2_200_000, tipo_salud="fonasa")
+calcular_sueldo_base(2_000_000, tipo_salud="fonasa")
 
 
 
