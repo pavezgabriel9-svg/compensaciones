@@ -12,7 +12,7 @@ import sys
 # Obtener directorio del script actual
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Agregar el directorio actual al path (donde está calcular_liquido.py)
+# Agregar el directorio actual al path
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
