@@ -12,23 +12,23 @@ from typing import Dict, List, Any, Optional
 import cryptography
 
 #envio de correos por outlook, entorno windows
-# import win32com.client as win32
-# import pythoncom
+import win32com.client as win32
+import pythoncom
 
 #-----------------------------------------------------------
 #                    Conexión BD
 #-----------------------------------------------------------
 # Entorno macOS
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "cancionanimal"
-DB_NAME = "prueba_buk"
+# DB_HOST = "localhost"
+# DB_USER = "root"
+# DB_PASSWORD = "cancionanimal"
+# DB_NAME = "prueba_buk"
 
 # Entorno Windows
-# DB_HOST = "10.254.33.138"
-# DB_USER = "compensaciones_rrhh"
-# DB_PASSWORD = "_Cramercomp2025_"
-# DB_NAME = "rrhh_app"
+DB_HOST = "192.168.245.33"
+DB_USER = "compensaciones_rrhh"
+DB_PASSWORD = "_Cramercomp2025_"
+DB_NAME = "rrhh_app"
 
 MAIL_TEST = "gpavez@cramer.cl"  
 
@@ -48,7 +48,7 @@ class DashboardAlertas:
 
     def _configurar_ventana_principal(self):
         """Configura la ventana principal"""
-        self.root.title("📊 Dashboard de Alertas de Contratos")
+        self.root.title("Dashboard de Alertas de Contratos")
         self.root.minsize(1200, 700)
         self.root.geometry("1300x800+50+50")
         self.root.configure(bg='#f0f0f0')
@@ -80,8 +80,8 @@ class DashboardAlertas:
                 id, employee_name, employee_rut, employee_role,
                 employee_area_name, boss_name, boss_email,
                 alert_date, alert_reason,
-                days_since_start,employee_start_date
-                DATEDIFF(alert_date, CURDATE()) as dias_hasta_alerta,
+                days_since_start, employee_start_date,
+                CAST(DATEDIFF(alert_date, CURDATE()) AS SIGNED) as dias_hasta_alerta,
                 is_urgent, requires_action, alert_type
             FROM contract_alerts 
             WHERE processed = FALSE
@@ -91,8 +91,8 @@ class DashboardAlertas:
             rows = cursor.fetchall()
 
             cols = ["ID", "Empleado", "RUT", "Cargo", "Área", "Jefe", "Email Jefe",
-                    "Fecha alerta", "Motivo", "Días desde inicio",
-                    "Días hasta alerta", "Urgente", "Requiere Acción", "Tipo Alerta", "fecha inicio"]
+                    "Fecha alerta", "Motivo", "Días desde inicio", "Fecha inicio",
+                    "Días hasta alerta", "Urgente", "Requiere Acción", "Tipo Alerta"]
             
             df = pd.DataFrame(rows, columns=cols)
             cursor.close()
@@ -103,6 +103,42 @@ class DashboardAlertas:
             messagebox.showerror("Error", f"Error obteniendo alertas:\n{e}")
             conexion.close()
             return pd.DataFrame()
+    
+    
+    def obtener_incidencias(self):
+        """Obtiene los datos de incidencias desde la base de datos."""
+        conexion = self.conectar_bd()
+        if not conexion:
+            print("sin conexion")
+            return pd.DataFrame()
+        else:
+            print("Conexión exitosa")
+
+        try:
+            cursor = conexion.cursor()
+            sql = """
+            SELECT
+                rut_empleado AS employee_rut ,
+                fecha_inicio,
+                fecha_fin,
+                tipo_permiso
+            FROM consolidado_incidencias
+            """
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            
+            cols = ["rut_empleado", "fecha_inicio", "fecha_fin", "tipo_permiso"]
+            incidencias_df = pd.DataFrame(rows, columns=cols)
+            cursor.close()
+            conexion.close()
+            return incidencias_df
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Error obteniendo incidencias:\n{e}")
+            conexion.close()
+            return pd.DataFrame()
+        
+
 
     def setup_ui(self):
         """Configura la interfaz de usuario"""
@@ -195,17 +231,16 @@ class DashboardAlertas:
         tree_frame.pack(fill='both', expand=True)
 
         # Columnas
-        columns = ('Empleado', 'Cargo', 'Jefe', 'Vencimiento', 
+        columns = ('Empleado', 'Cargo', 'Jefe', 'Fecha inicio', 
                   'Motivo', 'Estado')
-        # 'RUT','Área','Días hasta alerta'
         
         self.alertas_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15)
         
         # Configurar columnas
-        anchos = [200, 150, 200, 100, 150, 100]
+        anchos = [200, 150, 200, 120, 150, 100]
         for i, col in enumerate(columns):
             self.alertas_tree.heading(col, text=col)
-            self.alertas_tree.column(col, width=anchos[i], anchor='w' if i < 6 else 'center')
+            self.alertas_tree.column(col, width=anchos[i], anchor='w' if i < 5 else 'center')
 
         # Scrollbars
         scrollbar_v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.alertas_tree.yview)
@@ -229,7 +264,7 @@ class DashboardAlertas:
         btn_frame.pack()
 
         # Botones principales
-        tk.Button(btn_frame, text="📧 Enviar Reporte de Prueba", 
+        tk.Button(btn_frame, text="🔧 Enviar Reporte de Prueba", 
                  command=self.enviar_reporte_prueba,
                  bg='#e67e22', fg='white', font=('Arial', 11, 'bold'), 
                  relief='flat', padx=20, pady=10).pack(side='left', padx=10)
@@ -247,8 +282,25 @@ class DashboardAlertas:
     def cargar_alertas(self):
         """Carga las alertas y actualiza la interfaz"""
         self.alertas_df = self.obtener_alertas()
+        
+        # DEBUG: Para verificar las columnas (comentar después de corregir)
+        if not self.alertas_df.empty:
+            print("\n=== DEBUG INFO ===")
+            print("Columnas disponibles:")
+            for i, col in enumerate(self.alertas_df.columns):
+                print(f"  {i}: '{col}'")
+            print(f"\nTotal filas: {len(self.alertas_df)}")
+            print("Muestra de datos:")
+            print(self.alertas_df.head())
+            print("==================\n")
+        else:
+            print("DataFrame vacío - No hay alertas o error en consulta")
+        
         self.actualizar_metricas()
         self.actualizar_tabla()
+
+        self.alertas_df = self.obtener_alertas()
+        self.incidencias_df = self.obtener_incidencias()
 
     def actualizar_metricas(self):
         """Actualiza las métricas en la interfaz"""
@@ -277,30 +329,35 @@ class DashboardAlertas:
 
         # Llenar tabla
         for _, row in df_filtrado.iterrows():
-            # Determinar estado visual
-            dias_hasta = row["Días hasta alerta"]
-            if dias_hasta <= 0:
-                estado = "VENCIDA"
-            elif row["Urgente"] == 1:
-                estado = "URGENTE"
-            elif row["Requiere Acción"] == 1:
-                estado = "ACCIÓN"
-            else:
-                estado = "FUTURA"
+            try:
+                # Determinar estado visual
+                dias_hasta = row["Días hasta alerta"]
+                if dias_hasta <= 0:
+                    estado = "VENCIDA"
+                elif row["Urgente"] == 1:
+                    estado = "URGENTE"
+                elif row["Requiere Acción"] == 1:
+                    estado = "ACCIÓN"
+                else:
+                    estado = "FUTURA"
 
-            valores = (
-                row["Empleado"], row["Cargo"], 
-                row["Jefe"], row["fecha inicio"], row["Motivo"], 
-                estado
-            )
-            #row["Área"], row["RUT"],
-            item = self.alertas_tree.insert('', 'end', values=valores)
-            
-            # # Colorear filas según urgencia
-            # if dias_hasta <= 0:
-            #     self.alertas_tree.set(item, 'Estado', '🔴 VENCIDA')
-            # elif row["Urgente"] == 1:
-            #     self.alertas_tree.set(item, 'Estado', '🟠 URGENTE')
+                valores = (
+                    row["Empleado"], 
+                    row["Cargo"], 
+                    row["Jefe"], 
+                    row["Fecha inicio"],
+                    row["Motivo"], 
+                    estado
+                )
+                item = self.alertas_tree.insert('', 'end', values=valores)
+                
+            except KeyError as e:
+                print(f"Error accediendo a columna: {e}")
+                print(f"Columnas disponibles: {list(row.index)}")
+                break
+            except Exception as e:
+                print(f"Error general en fila: {e}")
+                continue
 
     def aplicar_filtro_actual(self):
         """Aplica el filtro seleccionado"""
@@ -337,7 +394,7 @@ class DashboardAlertas:
             outlook = win32.Dispatch("outlook.application")
             mail = outlook.CreateItem(0)
             mail.To = MAIL_TEST
-            mail.Subject = f"🚨 Reporte de alertas de contratos ({len(self.alertas_df)} pendientes)"
+            mail.Subject = f"Reporte de alertas de contratos ({len(self.alertas_df)} pendientes)"
 
             # Generar HTML del reporte
             html = self._generar_html_reporte()
@@ -350,62 +407,85 @@ class DashboardAlertas:
         except Exception as e:
             messagebox.showerror("Error", f"Error enviando correo:\n{e}")
 
+
     def _generar_html_reporte(self):
-        """Genera el HTML del reporte de alertas"""
+        """Genera el HTML del reporte de alertas con detalles de permisos."""
         html = f"""
         <html>
         <head>
             <style>
                 body {{ font-family: Arial, sans-serif; margin: 20px; }}
                 h2 {{ color: #e74c3c; }}
-                table {{ border-collapse: collapse; width: 100%; margin-top: 20px; }}
-                th {{ background-color: #34495e; color: white; padding: 10px; text-align: left; }}
-                td {{ padding: 8px; border-bottom: 1px solid #ddd; }}
-                .urgente {{ background-color: #ffebee; }}
+                .alerta-container {{ border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; }}
+                .alerta-header {{ font-weight: bold; font-size: 1.2em; color: #2c3e50; }}
+                .urgente {{ background-color: #fce4e4; }}
                 .vencida {{ background-color: #ffcdd2; }}
+                table {{ border-collapse: collapse; width: 100%; margin-top: 10px; }}
+                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                th {{ background-color: #34495e; color: white; }}
             </style>
         </head>
         <body>
-            <h2>📊 Reporte de Alertas de Contratos</h2>
+            <h2>Reporte de Alertas de Contratos</h2>
             <p><strong>Fecha:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
             <p><strong>Total alertas:</strong> {len(self.alertas_df)}</p>
-            
-            <table>
-                <tr>
-                    <th>Empleado</th>
-                    <th>RUT</th>
-                    <th>Cargo</th>
-                    <th>Área</th>
-                    <th>Jefe</th>
-                    <th>fecha inicio</th>
-                    <th>Motivo</th>
-                    <th>Días hasta alerta</th>
-                    <th>Estado</th>
-                </tr>
         """
-        
+
+        # Bucle para crear una sección por cada alerta
         for _, row in self.alertas_df.iterrows():
             dias_hasta = row["Días hasta alerta"]
             clase_css = "vencida" if dias_hasta <= 0 else "urgente" if row["Urgente"] == 1 else ""
             
+            # Filtrar permisos para el empleado actual
+            incidencias_empleado = self.incidencias_df[self.incidencias_df['rut_empleado'] == row['RUT']]
+            
+            # HTML para la alerta del empleado
             html += f"""
-                <tr class="{clase_css}">
-                    <td>{row['Empleado']}</td>
-                    <td>{row['RUT']}</td>
-                    <td>{row['Cargo']}</td>
-                    <td>{row['Área']}</td>
-                    <td>{row['Jefe']}</td>
-                    <td>{row['fecha inicio']}</td>
-                    <td>{row['Motivo']}</td>
-                    <td>{dias_hasta}</td>
-                    <td>{'🔴 VENCIDA' if dias_hasta <= 0 else '🟠 URGENTE' if row['Urgente'] == 1 else '🟡 ACCIÓN'}</td>
-                </tr>
+            <div class="alerta-container {clase_css}">
+                <div class="alerta-header">Termino Contrato: {row['Empleado']}</div>
+                <p><strong>Cargo:</strong> {row['Cargo']}</p>
+                <p><strong>Motivo:</strong> {row['Motivo']}</p>
+                <p><strong>Jefe:</strong> {row['Jefe']} ({row['Email Jefe']})</p>
+                <p><strong>Fecha de Renovación:</strong> {row['Fecha alerta']}</p>
+                <!-- <p><strong>Estado:</strong> {'🔴 VENCIDA' if dias_hasta <= 0 else '🟠 URGENTE' if row['Urgente'] == 1 else '🟡 ACCIÓN'}</p> -->
             """
-        
+            
+            # HTML para la tabla de permisos
+            if not incidencias_empleado.empty:
+                html += """
+                <h4>Permisos Activos:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo de Permiso</th>
+                            <th>Fecha de Inicio</th>
+                            <th>Fecha de Fin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                """
+                for _, inc_row in incidencias_empleado.iterrows():
+                    html += f"""
+                        <tr>
+                            <td>{inc_row['tipo_permiso']}</td>
+                            <td>{inc_row['fecha_inicio']}</td>
+                            <td>{inc_row['fecha_fin']}</td>
+                        </tr>
+                    """
+                html += """
+                    </tbody>
+                </table>
+                """
+            else:
+                html += "<p>Este empleado no registra ausencias, permisos y/o licencias.</p>"
+                
+            html += """
+            </div>
+            """
+
         html += """
-            </table>
-            <br>
-            <p><em>Generado automáticamente por el Sistema de Alertas de Contratos</em></p>
+        <br>
+        <p><em>Generado automáticamente por el Sistema de Alertas de Contratos de RRHH</em></p>
         </body>
         </html>
         """
@@ -419,13 +499,13 @@ class DashboardAlertas:
 
         # Crear ventana de resumen
         resumen_win = tk.Toplevel(self.root)
-        resumen_win.title("👔 Resumen por Jefe")
+        resumen_win.title("💼 Resumen por Jefe")
         resumen_win.geometry("800x600+200+100")
         resumen_win.configure(bg='#f0f0f0')
         resumen_win.grab_set()
 
         # Título
-        tk.Label(resumen_win, text="👔 Resumen de Alertas por Jefe", 
+        tk.Label(resumen_win, text="💼 Resumen de Alertas por Jefe", 
                 font=('Arial', 14, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(pady=15)
 
         # Crear treeview para resumen
@@ -453,7 +533,7 @@ class DashboardAlertas:
         resumen_tree.pack(fill='both', expand=True, padx=20, pady=10)
 
         # Botón cerrar
-        tk.Button(resumen_win, text="❌ Cerrar", command=resumen_win.destroy,
+        tk.Button(resumen_win, text="⌐ Cerrar", command=resumen_win.destroy,
                  bg='#95a5a6', fg='white', font=('Arial', 11, 'bold'),
                  relief='flat', padx=20, pady=10).pack(pady=15)
 
