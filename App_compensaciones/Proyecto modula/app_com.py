@@ -32,9 +32,9 @@ class CompensaViewer:
     def __init__(self, root: tk.Tk):
         self.root = root
         self._configurar_ventana()
-        # self.data_df = None
-        # self.employees_df = None
-        # self.settlements_df = None
+        self.data_df = None
+        self.employees_df = None
+        self.settlements_df = None
         self.groups_df = None
         self.setup_ui() 
         self.cargar_datos_unificados()
@@ -124,7 +124,7 @@ class CompensaViewer:
                 df_final['Período_Liquidacion'] = df_final['Pay_Period'].dt.to_period('M').astype(str)
                 
                 # Renombrar columnas para consistencia y evitar duplicados
-                # df_final = df_final.rename('rut_empleado': 'rut')
+                df_final = df_final.rename(columns={ 'rut_empleado': 'rut' })
             
             conexion.close()
             return df_final
@@ -167,6 +167,23 @@ class CompensaViewer:
         self.actualizar_metricas()
         self.actualizar_tabla()
         #aca se pueden actualizar los grupos
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
     # ------------------------------------------------------
     # Grupos
@@ -330,13 +347,13 @@ class CompensaViewer:
         else:
             self.selected_group_id = None
     
-    def _actualizar_tabla_grupos(self):
-        """Actualiza la tabla de grupos con los datos de la base de datos."""
-        for item in self.groups_tree.get_children():
-            self.groups_tree.delete(item)
-        if self.groups_df is not None and not self.groups_df.empty:
-            for _, row in self.groups_df.iterrows():
-                self.groups_tree.insert('', 'end', values=(row['group_id'], row['group_name']))
+    # def _actualizar_tabla_grupos(self):
+    #     """Actualiza la tabla de grupos con los datos de la base de datos."""
+    #     for item in self.groups_tree.get_children():
+    #         self.groups_tree.delete(item)
+    #     if self.groups_df is not None and not self.groups_df.empty:
+    #         for _, row in self.groups_df.iterrows():
+    #             self.groups_tree.insert('', 'end', values=(row['group_id'], row['group_name']))
 
     def _gestionar_empleados_grupo_ui(self):
         """Abre una nueva ventana para gestionar los empleados de un grupo."""
@@ -386,6 +403,17 @@ class CompensaViewer:
         # Cargar datos en las tablas de la ventana emergente
         self._actualizar_tablas_gestion_empleados(group_id)
             
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
     # ------------------------------------------------------
     # Configuración de la UI
     # ------------------------------------------------------
@@ -411,7 +439,7 @@ class CompensaViewer:
 
         self.group_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.group_frame, text="Gestión de Grupos")
-        self._setup_group_ui()
+        #self._setup_group_ui()
 
     def _setup_dashboard_ui(self):
         main_frame = tk.Frame(self.dashboard_frame, bg='#ecf0f1')
@@ -462,6 +490,21 @@ class CompensaViewer:
         rut_empleado = self.group_employees_tree.item(selected_item, 'values')[0]
         if self.eliminar_empleado_de_grupo(group_id, rut_empleado):
             self._actualizar_tablas_gestion_empleados(group_id)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # ------------------------------------------------------
     # Sección métricas
@@ -730,8 +773,6 @@ class CompensaViewer:
         # Obtener y preparar los datos de cada persona
         data_by_person = []
         for rut in ruts:
-            # Aquí obtienes los datos de cada empleado, similar a como lo haces en abrir_ficha_persona
-            # Usar el último registro disponible para la comparación
             df_persona_ultimo = self.data_df[self.data_df["rut"] == rut].sort_values('start_date').iloc[-1]
             
             # También puedes obtener datos adicionales del employees_df
@@ -789,7 +830,6 @@ class CompensaViewer:
             if df_persona_base.empty:
                 continue
             
-            # Preparar los datos de sueldo base para el gráfico (similar a la ficha de persona)
             df_persona_base.sort_values(by="start_date", inplace=True)
             df_persona_base['start_month'] = df_persona_base['start_date'].dt.to_period('M').dt.to_timestamp()
             
@@ -898,6 +938,7 @@ class CompensaViewer:
         if df_persona_base.empty:
             messagebox.showwarning("Sin datos", f"No se encontraron datos")
             return
+        
         df_persona_base.sort_values(by="start_date", inplace=True)
 
         # Alinear las fechas de inicio al primer día del mes para el gráfico
