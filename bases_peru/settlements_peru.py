@@ -61,7 +61,7 @@ def get_db_engine():
 # ------------------ Utils API ------------------
 def request_with_retry(session, url, headers, max_retries=5, backoff_base=1.5, timeout=30):
     """
-    Realiza GET con reintentos exponenciales para errores de red / 5xx.
+    Realiza GET con reintentos exponenciales
     Devuelve response.json() o lanza excepción si falla despues de retries.
     """
     attempt = 0
@@ -525,8 +525,8 @@ def main():
             time.sleep(0.3)
 
         except Exception as e:
-            logger.error(f"   Falló procesamiento para periodo {p['label']}: {e}")
-            logger.error(f"   Traceback: {traceback.format_exc()}")
+            logger.error(f"Falló procesamiento para periodo {p['label']}: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
             failed_periods.append({"period": p['label'], "error": str(e)})
             continue
 
