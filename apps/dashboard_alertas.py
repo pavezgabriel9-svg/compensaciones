@@ -900,7 +900,7 @@ class DashboardAlertas:
         html += f"""
         <br>
         <div class="resumen">
-            <p><strong>📊 Resumen del envío:</strong></p>
+            <p><strong>Resumen del envío:</strong></p>
             <ul>
                 <li>Alertas seleccionadas: {len(alertas_seleccionadas)}</li>
                 <li>Empleados: {', '.join(alertas_seleccionadas['Empleado'].tolist())}</li>
