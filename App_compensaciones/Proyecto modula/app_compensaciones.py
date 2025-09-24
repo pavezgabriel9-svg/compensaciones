@@ -25,9 +25,7 @@ DB_NAME = "rrhh_app"
 # DB_PASSWORD = "cancionanimal"
 # DB_NAME = "conexion_buk"
 
-# ----------------------------------------------------------
-# Clase principal
-# ----------------------------------------------------------
+
 class CompensaViewer:
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -37,169 +35,76 @@ class CompensaViewer:
         self.settlements_df = None
         self.groups_df = None
         self.setup_ui() 
-        self.cargar_datos_unificados()
-        #self._actualizar_tabla_grupos()  
+        self.cargar_datos()
+        self._actualizar_tabla_grupos()  
         
-    # ------------------------------------------------------
-    # Conexion BD y carga datos
-    # ------------------------------------------------------
-    def conectar_bd(self):
+    def _configurar_ventana(self):
+        self.root.title("Dashboard de Compensaciones")
+        self.root.minsize(1300, 750)
+        self.root.configure(bg='#ecf0f1')
+
+    def obtener_conexion(self):
+        """Establece y retorna la conexión a la base de datos"""
         try:
             return pymysql.connect(
                 host=DB_HOST,
                 user=DB_USER,
                 password=DB_PASSWORD,
-                database=DB_NAME,
-                charset="utf8mb4"
+                database=DB_NAME
             )
-        except Exception as e:
-            messagebox.showerror("Error BD", f"No se pudo conectar:\n{e}")
+        except pymysql.MySQLError as e:
+            messagebox.showerror("Error de Conexión", f"No se pudo conectar a la base de datos: {e}")
             return None
 
-    def obtener_datos_unificados(self):
-        conexion = self.conectar_bd()
-        if not conexion:
-            return pd.DataFrame()
-        try:
-            query = """
-            SELECT
-                -- Query Table Employees
-                e.person_id,
-                e.rut AS rut_empleado,
-                e.full_name AS Nombre_Completo,
-                e.email,
-                e.phone,
-                e.gender AS Género,
-                e.birthday,
-                e.university,
-                e.nationality,
-                e.active_since,
-                e.status,
-                e.contract_type AS Tipo_Contrato,
-                e.area_id AS ID_Area,
-                
-                -- Query Table Areas
-                a.name AS Nombre_Area,
-                
-                -- Query Table Employees_Jobs
-                ej.role_name AS Cargo_Actual,
-                ej.base_wage AS sueldo_base,
-                ej.start_date AS Fecha_Inicio_Cargo,
-                ej.end_date AS Fecha_Fin_Cargo,
-                ej.boss_rut,
-                jefe.full_name AS Nombre_Jefe,
-                
-                -- Query Table Historical_Settlements
-                hs.Pay_Period,
-                hs.Liquido_a_Pagar
-                
-                
-            FROM employees e
-            LEFT JOIN employees_jobs ej ON e.rut = ej.person_rut
-            LEFT JOIN areas a ON e.area_id = a.id
-            LEFT JOIN employees jefe ON ej.boss_rut = jefe.rut
-            LEFT JOIN historical_settlements hs ON e.rut = hs.RUT
-            WHERE
-                e.status = 'activo'
-                AND (ej.start_date >= '2018-01-01' OR ej.start_date IS NULL)
-                AND (hs.Pay_Period >= '2018-01-01' OR hs.Pay_Period IS NULL)
-            ORDER BY e.full_name, ej.start_date, hs.Pay_Period;
-            """
-            df_final = pd.read_sql(query, conexion)
-
-            # Procesamiento de datos del DataFrame
-            if not df_final.empty:
-                # Conversión de tipos de datos
-                df_final['active_since'] = pd.to_datetime(df_final['active_since'], errors='coerce')
-                df_final['birthday'] = pd.to_datetime(df_final['birthday'], errors='coerce')
-                df_final['Fecha_Inicio_Cargo'] = pd.to_datetime(df_final['Fecha_Inicio_Cargo'], errors='coerce')
-                df_final['Pay_Period'] = pd.to_datetime(df_final['Pay_Period'], errors='coerce')
-
-                # Creación de columnas calculadas
-                df_final["Años_de_Servicio"] = (pd.to_datetime("today").year - df_final["active_since"].dt.year).fillna(0)
-                df_final['edad'] = (pd.to_datetime("today") - df_final['birthday']).dt.days // 365
-                df_final['Período_Cargo'] = df_final['Fecha_Inicio_Cargo'].dt.to_period('M').astype(str)
-                df_final['Año_Cargo'] = df_final['Fecha_Inicio_Cargo'].dt.year
-                df_final['Mes_Cargo'] = df_final['Fecha_Inicio_Cargo'].dt.month
-                df_final['Período_Liquidacion'] = df_final['Pay_Period'].dt.to_period('M').astype(str)
-                
-                # Renombrar columnas para consistencia y evitar duplicados
-                df_final = df_final.rename(columns={ 'rut_empleado': 'rut' })
-            
-            conexion.close()
-            return df_final
-        
-        
-        except Exception as e:
-            messagebox.showerror("Error SQL", f"Error consultando datos:\n{e}")
+    def cargar_datos(self):
+        """Carga los datos iniciales de todas las tablas necesarias."""
+        conn = self.obtener_conexion()
+        if conn:
             try:
-                conexion.close()
-            except:
-                pass
-            return pd.DataFrame()
-    
-    def cargar_datos_unificados(self):
-        """Carga datos desde BD y actualiza la UI"""
-        try:
-            self.data_df = self.obtener_datos_unificados()    
-            # Poblar combos dinámicos
-            if "Nombre_Area" in self.data_df.columns:
-                areas = sorted(self.data_df["Nombre_Area"].dropna().unique())
-                self.area_combo['values'] = ["Todos"] + areas
-            
-            self.actualizar_metricas()
-            self.actualizar_tabla()
-            self._actualizar_tabla_grupos()
-            self.actualizar_dashboard(self.data_df)
-            
-        except Exception as e:
-            messagebox.showerror("Error de carga", f"Ocurrió un error al cargar los datos: {e}")   
+                self.employees_df = pd.read_sql("SELECT * FROM employees", conn)
+                self.settlements_df = pd.read_sql("SELECT * FROM historical_settlements", conn)
+                self.groups_df = pd.read_sql("SELECT * FROM groups_table", conn)
+                
+                self.data_df = pd.merge(self.employees_df, self.settlements_df, on='rut', how='left')
+                
+                self.data_df['antiguedad_dias'] = (datetime.now() - pd.to_datetime(self.data_df['fecha_ingreso'])).dt.days
+                self.actualizar_dashboard(self.data_df)
+                # Añadir esta línea para actualizar la tabla de grupos
+                self._actualizar_tabla_grupos()
+                messagebox.showinfo("Datos Cargados", "Datos de empleados, liquidaciones y grupos cargados exitosamente.")
+            except pymysql.MySQLError as e:
+                messagebox.showerror("Error de Carga", f"No se pudieron cargar los datos: {e}")
+            finally:
+                conn.close()
         
-      
-            
-
-    # ------------------------------------------------------    
     def actualizar_dashboard(self, df):
         """Actualiza todos los elementos del dashboard con los datos cargados"""
         if df is None or df.empty:
             messagebox.showwarning("Sin datos", "No se encontraron datos para mostrar en el dashboard.")
             return
+            
+        # Actualizar métricas
         self.actualizar_metricas()
+        
+        # Actualizar tabla
         self.actualizar_tabla()
-        #aca se pueden actualizar los grupos
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    # ------------------------------------------------------
-    # Grupos
-    # ------------------------------------------------------
+        # Si tienes más elementos en el dashboard que necesiten actualizarse,
+        # como gráficos o indicadores adicionales, actualízalos aquí
+
+    # --- Funciones de Backend para Grupos ---
     def crear_grupo(self, nombre_grupo, descripcion):
-        conexion = self.conectar_bd()
-        if conexion:
-            cursor = conexion.cursor()
+        conn = self.obtener_conexion()
+        if conn:
+            cursor = conn.cursor()
             try:
                 query = "INSERT INTO groups_table (group_name, group_description) VALUES (%s, %s)"
                 cursor.execute(query, (nombre_grupo, descripcion))
-                conexion.commit()
+                conn.commit()
                 messagebox.showinfo("Éxito", f"Grupo '{nombre_grupo}' creado exitosamente.")
                 
                 # Actualizar el DataFrame de grupos después de crear uno nuevo
-                self.groups_df = pd.read_sql("SELECT * FROM groups_table", conexion)
+                self.groups_df = pd.read_sql("SELECT * FROM groups_table", conn)
                 
                 self._actualizar_tabla_grupos()
                 return True
@@ -207,26 +112,26 @@ class CompensaViewer:
                 messagebox.showerror("Error", f"No se pudo crear el grupo: {e}")
                 return False
             finally:
-                conexion.close()
+                conn.close()
     
     def agregar_empleado_a_grupo(self, group_id, rut_empleado):
-        conexion = self.conectar_bd()
-        if conexion:
-            cursor = conexion.cursor()
+        conn = self.obtener_conexion()
+        if conn:
+            cursor = conn.cursor()
             try:
                 query = "INSERT INTO employees_group (group_id, rut) VALUES (%s, %s)"
                 cursor.execute(query, (group_id, rut_empleado))
-                conexion.commit()
+                conn.commit()
                 return True
             except pymysql.MySQLError as e:
                 messagebox.showerror("Error", f"No se pudo agregar el empleado al grupo: {e}")
                 return False
             finally:
-                conexion.close()
+                conn.close()
 
     def obtener_empleados_por_grupo(self, group_id):
-        conexion = self.conectar_bd()
-        if conexion:
+        conn = self.obtener_conexion()
+        if conn:
             try:
                 query = """
                 SELECT t1.*
@@ -234,43 +139,43 @@ class CompensaViewer:
                 JOIN employees_group AS t2 ON t1.rut = t2.rut
                 WHERE t2.group_id = %s
                 """
-                return pd.read_sql(query, conexion, params=(group_id,))
+                return pd.read_sql(query, conn, params=(group_id,))
             except pymysql.MySQLError as e:
                 messagebox.showerror("Error", f"No se pudieron obtener los empleados del grupo: {e}")
                 return pd.DataFrame()
             finally:
-                conexion.close()
+                conn.close()
         return pd.DataFrame()
         
     def eliminar_empleado_de_grupo(self, group_id, rut_empleado):
-        conexion = self.conectar_bd()
-        if conexion:
-            cursor = conexion.cursor()
+        conn = self.obtener_conexion()
+        if conn:
+            cursor = conn.cursor()
             try:
                 query = "DELETE FROM employees_group WHERE group_id = %s AND rut = %s"
                 cursor.execute(query, (group_id, rut_empleado))
-                conexion.commit()
+                conn.commit()
                 messagebox.showinfo("Éxito", "Empleado eliminado del grupo exitosamente.")
-                self.cargar_datos_unificados()
+                self.cargar_datos()
                 return True
             except pymysql.MySQLError as e:
                 messagebox.showerror("Error", f"No se pudo eliminar el empleado del grupo: {e}")
                 return False
             finally:
-                conexion.close()
+                conn.close()
 
     def eliminar_grupo(self, group_id):
-        conexion = self.conectar_bd()
-        if conexion:
-            cursor = conexion.cursor()
+        conn = self.obtener_conexion()
+        if conn:
+            cursor = conn.cursor()
             try:
                 query = "DELETE FROM groups_table WHERE group_id = %s"
                 cursor.execute(query, (group_id,))
-                conexion.commit()
+                conn.commit()
                 messagebox.showinfo("Éxito", "Grupo eliminado exitosamente.")
                 
                 # Actualizar el DataFrame de grupos después de eliminar uno
-                self.groups_df = pd.read_sql("SELECT * FROM groups_table", conexion)
+                self.groups_df = pd.read_sql("SELECT * FROM groups_table", conn)
                 
                 self._actualizar_tabla_grupos()
                 return True
@@ -278,9 +183,43 @@ class CompensaViewer:
                 messagebox.showerror("Error", f"No se pudo eliminar el grupo: {e}")
                 return False
             finally:
-                conexion.close()
-    
+                conn.close()
+
+    # --- Configuración de la UI ---
+    def setup_ui(self):
+        style = ttk.Style()
+        style.configure("TNotebook", background='#ecf0f1')
+        style.configure("TNotebook.Tab", padding=[15, 5])
+        style.configure("TFrame", background='#ecf0f1')
+        style.configure("TButton", font=('Arial', 10, 'bold'), relief='flat', background='#3498db', foreground='white')
+        style.map("TButton", background=[('active', '#2980b9')])
+
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Dashboard Tab
+        self.dashboard_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.dashboard_frame, text="Dashboard")
+        self._setup_dashboard_ui()
+
+        # Group Management Tab
+        self.group_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.group_frame, text="Gestión de Grupos")
+        self._setup_group_ui()
+
+    def _setup_dashboard_ui(self):
+        # Main Frame inside Dashboard tab
+        main_frame = tk.Frame(self.dashboard_frame, bg='#ecf0f1')
+        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Sección métricas
+        self.crear_seccion_metricas(main_frame)
+        
+        # Sección filtros + tabla
+        self.crear_seccion_principal(main_frame)
+
     def _setup_group_ui(self):
+        # Frame para la creación de grupos
         creation_frame = ttk.Frame(self.group_frame, padding=10)
         creation_frame.pack(fill='x', padx=10, pady=10)
 
@@ -296,6 +235,7 @@ class CompensaViewer:
         
         ttk.Button(creation_frame, text="Crear Grupo", command=self._crear_grupo_ui).pack(pady=10)
 
+        # Frame para mostrar los grupos
         view_frame = ttk.Frame(self.group_frame, padding=10)
         view_frame.pack(fill='both', expand=True, padx=10, pady=10)
 
@@ -310,10 +250,11 @@ class CompensaViewer:
 
         self.groups_tree.bind('<<TreeviewSelect>>', self._on_group_select)
 
+        # Frame para botones de acción de grupo
         action_frame = ttk.Frame(view_frame)
         action_frame.pack(pady=5)
-        ttk.Button(action_frame, text="Eliminar Grupo", command=self._eliminar_grupo_ui).pack(side='left', padx=5)
-        ttk.Button(action_frame, text="Agregar/Eliminar Empleados", command=self._gestionar_empleados_grupo_ui).pack(side='left', padx=5)
+        ttk.Button(action_frame, text="❌ Eliminar Grupo", command=self._eliminar_grupo_ui).pack(side='left', padx=5)
+        ttk.Button(action_frame, text="➕ Agregar/Eliminar Empleados", command=self._gestionar_empleados_grupo_ui).pack(side='left', padx=5)
         
         self._actualizar_tabla_grupos()
 
@@ -347,13 +288,13 @@ class CompensaViewer:
         else:
             self.selected_group_id = None
     
-    # def _actualizar_tabla_grupos(self):
-    #     """Actualiza la tabla de grupos con los datos de la base de datos."""
-    #     for item in self.groups_tree.get_children():
-    #         self.groups_tree.delete(item)
-    #     if self.groups_df is not None and not self.groups_df.empty:
-    #         for _, row in self.groups_df.iterrows():
-    #             self.groups_tree.insert('', 'end', values=(row['group_id'], row['group_name']))
+    def _actualizar_tabla_grupos(self):
+        """Actualiza la tabla de grupos con los datos de la base de datos."""
+        for item in self.groups_tree.get_children():
+            self.groups_tree.delete(item)
+        if self.groups_df is not None and not self.groups_df.empty:
+            for _, row in self.groups_df.iterrows():
+                self.groups_tree.insert('', 'end', values=(row['group_id'], row['group_name']))
 
     def _gestionar_empleados_grupo_ui(self):
         """Abre una nueva ventana para gestionar los empleados de un grupo."""
@@ -402,51 +343,6 @@ class CompensaViewer:
         
         # Cargar datos en las tablas de la ventana emergente
         self._actualizar_tablas_gestion_empleados(group_id)
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-    # ------------------------------------------------------
-    # Configuración de la UI
-    # ------------------------------------------------------
-    def _configurar_ventana(self):
-        self.root.title("Dashboard de Compensaciones")
-        self.root.minsize(1300, 750)
-        self.root.configure(bg='#ecf0f1')
-        
-    def setup_ui(self):
-        style = ttk.Style()
-        style.configure("TNotebook", background='#ecf0f1')
-        style.configure("TNotebook.Tab", padding=[15, 5])
-        style.configure("TFrame", background='#ecf0f1')
-        style.configure("TButton", font=('Arial', 10, 'bold'), relief='flat', background='#3498db', foreground='white')
-        style.map("TButton", background=[('active', '#2980b9')])
-
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        self.dashboard_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.dashboard_frame, text="Dashboard")
-        self._setup_dashboard_ui()
-
-        self.group_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.group_frame, text="Gestión de Grupos")
-        #self._setup_group_ui()
-
-    def _setup_dashboard_ui(self):
-        main_frame = tk.Frame(self.dashboard_frame, bg='#ecf0f1')
-        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
-        self.crear_seccion_metricas(main_frame)
-        self.crear_seccion_principal(main_frame)
-
 
     def _actualizar_tablas_gestion_empleados(self, group_id):
         """Actualiza las tablas de gestión de empleados."""
@@ -490,21 +386,186 @@ class CompensaViewer:
         rut_empleado = self.group_employees_tree.item(selected_item, 'values')[0]
         if self.eliminar_empleado_de_grupo(group_id, rut_empleado):
             self._actualizar_tablas_gestion_empleados(group_id)
+    
+    # ------------------------------------------------------
+    # Conexion BD
+    # ------------------------------------------------------
+    def conectar_bd(self):
+        try:
+            return pymysql.connect(
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME,
+                charset="utf8mb4"
+            )
+        except Exception as e:
+            messagebox.showerror("Error BD", f"No se pudo conectar:\n{e}")
+            return None
 
+    def obtener_datos(self):
+        """Obtiene datos con info de jefatura, cargo y sueldo desde employees_jobs"""
+        conexion = self.conectar_bd()
+        if not conexion:
+            return pd.DataFrame()
+        try:
+            query = """
+            SELECT
+                e.person_id,
+                e.rut,
+                e.full_name AS Nombre,
+                COALESCE(e.gender, 'N/A') AS Género,
+                e.area_id AS ID_Area,
+                COALESCE(e.contract_type, 'N/A') AS Tipo_Contrato,
+                e.active_since,
 
+                -- Historial desde employees_jobs
+                ej.start_date,
+                ej.end_date,
+                ej.role_name AS Cargo_Actual,
+                ej.base_wage AS Sueldo_Base,
 
+                -- Área
+                COALESCE(a.name, CONCAT('Área ', e.area_id)) AS Nombre_Area,
 
+                -- Jefatura
+                jefe.full_name AS Nombre_Jefe
 
+            FROM employees_jobs ej
+            JOIN employees e
+                ON ej.person_rut = e.rut
+            LEFT JOIN areas a
+                ON e.area_id = a.id
+            LEFT JOIN employees jefe
+                ON ej.boss_rut = jefe.rut
 
+            WHERE e.status = 'activo' AND ej.start_date >= '2018-01-01'
+            ORDER BY e.full_name, ej.start_date;
 
+            """
+            df = pd.read_sql(query, conexion)
+            if not df.empty:
+                # Crear las columnas de fecha
+                df['active_since'] = pd.to_datetime(df['active_since'], errors='coerce')
+                df['start_date'] = pd.to_datetime(df['start_date'], errors='coerce')
 
+                # Calcular Años_de_Servicio usando active_since (es la antigüedad del empleado)
+                df["Años_de_Servicio"] = (pd.to_datetime("today").year - df["active_since"].dt.year).fillna(0)
 
+                df['Período'] = df['start_date'].dt.to_period('M').astype(str)
+                df['Año'] = df['start_date'].dt.year
+                df['Mes'] = df['start_date'].dt.month
 
+                df['sueldo_base'] = df['Sueldo_Base']
+                
+            conexion.close()
+            return df
+        except Exception as e:
+            messagebox.showerror("Error SQL", f"Error consultando datos:\n{e}")
+            try:
+                conexion.close()
+            except:
+                pass
+            return pd.DataFrame()
+    
+    
+    def obtener_datos_empleados(self):
+        """Obtiene datos completos de empleados para la ficha"""
+        conn = self.conectar_bd()
+        if not conn:
+            return pd.DataFrame()
+        try:
+            query = """
+            SELECT person_id, id, full_name, rut, email, phone, gender, birthday, 
+            university, nationality, active_since, status, start_date, end_date, 
+            contract_type, id_boss, rut_boss, base_wage, name_role, area_id, cost_center,
+            degree
+        
+            FROM employees
+            """
+            df = pd.read_sql(query, conn)
+            conn.close()
+            return df
+        except Exception as e:
+            print(f"Error obteniendo datos de empleados: {e}")
+            try:
+                conn.close()
+            except:
+                pass
+            return pd.DataFrame()
+        
+    def obtener_datos_liquidaciones(self):
+        """Obtiene datos de liquidaciones desde historical_settlements."""
+        conn = self.conectar_bd()
+        if not conn:
+            return pd.DataFrame()
+        try:
+            query = """
+            SELECT
+                `Pay_Period`,
+                `RUT` AS rut,
+                `Liquido_a_Pagar`
+            FROM historical_settlements
+            WHERE `Pay_Period` >= '2018-01-01'
+            ORDER BY rut, `Pay_Period`;
+            """
+            df_liquidaciones = pd.read_sql(query, conn)
+            if not df_liquidaciones.empty:
+                df_liquidaciones['Pay_Period'] = pd.to_datetime(df_liquidaciones['Pay_Period'], errors='coerce')
+                df_liquidaciones['Periodo_Liquidacion'] = df_liquidaciones['Pay_Period'].dt.to_period('M').astype(str)
+                
+                df_liquidaciones = df_liquidaciones.dropna(subset=['Pay_Period', 'rut', 'Liquido_a_Pagar'])
 
+            conn.close()
+            return df_liquidaciones
+        except Exception as e:
+            messagebox.showerror("Error SQL Liquidaciones", f"Error consultando datos de liquidaciones:\n{e}")
+            try:
+                conn.close()
+            except:
+                pass
+            return pd.DataFrame()
 
+    # ------------------------------------------------------
+    # UI principal
+    # ------------------------------------------------------
+    # def setup_ui(self):
+    #     # Configurar estilo del notebook
+    #     style = ttk.Style()
+    #     style.configure("TNotebook", background='#ecf0f1')
+    #     style.configure("TNotebook.Tab", padding=[15, 5])
+    #     style.configure("TFrame", background='#ecf0f1')
+    #     style.configure("TButton", font=('Arial', 10, 'bold'), relief='flat', background='#3498db', foreground='white')
+    #     style.map("TButton", background=[('active', '#2980b9')])
 
+    #     # Título barra
+    #     title_frame = tk.Frame(self.root, bg='#2980b9', height=60)
+    #     title_frame.pack(fill='x')
+    #     title_label = tk.Label(title_frame, text="Dashboard de Compensaciones", font=('Arial', 17, 'bold'), fg='white', bg='#2980b9')
+    #     title_label.pack(expand=True, pady=15)
 
+    #     # Crear el notebook
+    #     self.notebook = ttk.Notebook(self.root)
+    #     self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
+    #     # Dashboard Tab
+    #     self.dashboard_frame = ttk.Frame(self.notebook)
+    #     self.notebook.add(self.dashboard_frame, text="Dashboard")
+        
+    #     # Main Frame inside Dashboard tab
+    #     main_frame = tk.Frame(self.dashboard_frame, bg='#ecf0f1')
+    #     main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+    #     # Sección métricas
+    #     self.crear_seccion_metricas(main_frame)
+        
+    #     # Sección filtros + tabla
+    #     self.crear_seccion_principal(main_frame)
+
+    #     # Group Management Tab
+    #     self.group_frame = ttk.Frame(self.notebook)
+    #     self.notebook.add(self.group_frame, text="Gestión de Grupos")
+    #     self._setup_group_ui()
 
     # ------------------------------------------------------
     # Sección métricas
@@ -546,6 +607,12 @@ class CompensaViewer:
         # Primera fila de filtros
         fila1 = tk.Frame(filtros_frame, bg='#ecf0f1')
         fila1.pack(fill='x', pady=2)
+        
+        #label período
+        # tk.Label(fila1, text="Período:", bg='#ecf0f1').pack(side='left', padx=5)
+        # self.periodo_var = tk.StringVar(value="Todos")
+        # self.periodo_combo = ttk.Combobox(fila1, textvariable=self.periodo_var, state="readonly", width=12)
+        # self.periodo_combo.pack(side='left', padx=5)
         
         #label área
         tk.Label(fila1, text="Área:", bg='#ecf0f1').pack(side='left', padx=5)
@@ -621,13 +688,48 @@ class CompensaViewer:
         scrollbar_h.pack(side='bottom', fill='x')
 
     # ------------------------------------------------------
+    # Sección Acciones
+    # ------------------------------------------------------
+    # def crear_seccion_acciones(self, parent):
+    #     acciones_frame = tk.LabelFrame(parent, text="Acciones", font=('Arial', 12, 'bold'), bg='#ecf0f1', fg='#2c3e50', padx=10, pady=10)
+    #     acciones_frame.pack(fill='x', pady=(8, 0))
+    #     btn_frame = tk.Frame(acciones_frame, bg='#ecf0f1')
+    #     btn_frame.pack()
+    #     tk.Button(btn_frame, text="📈 Ver Evolución Salarial", command=self.mostrar_evolucion, bg='#8e44ad', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
+    #     tk.Button(btn_frame, text="📊 Resumen por Área", command=self.mostrar_resumen_areas, bg='#e67e22', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
+    #     tk.Button(btn_frame, text="📥 Exportar a Excel", command=self.exportar_excel, bg='#16a085', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
+
+
+    # ------------------------------------------------------
     # Funciones principales
     # ------------------------------------------------------
+    def cargar_datos(self):
+        self.data_df = self.obtener_datos()
+        self.employees_df = self.obtener_datos_empleados()
+        self.settlements_df = self.obtener_datos_liquidaciones()
+
+        if self.data_df is None or self.data_df.empty:
+            messagebox.showwarning("Sin datos", "No se encontraron datos en la base.")
+            return
+
+        # Poblar combos dinámicos
+        #periodos = sorted(self.data_df["Período"].dropna().unique())
+        areas = sorted(self.data_df["Nombre_Area"].dropna().unique())
+        #self.periodo_combo['values'] = ["Todos"] + periodos
+        self.area_combo['values'] = ["Todos"] + areas
+
+        # Actualizar métricas y tabla
+        self.actualizar_metricas()
+        self.actualizar_tabla()
+
     def aplicar_filtros(self, df):
+        # Filtro por período
+        # if self.periodo_var.get() != "Todos":
+        #     df = df[df["Período"] == self.periodo_var.get()]
         # Filtro por área
         if self.area_var.get() != "Todos":
             df = df[df["Nombre_Area"] == self.area_var.get()]
-        # Búsqueda mejorada
+        # Búsqueda mejorada por palabras separadas en nombre + rut!!!!!
         search_term = self.search_name_var.get().strip()
         if search_term and not df.empty:
             palabras = search_term.lower().split()
@@ -648,6 +750,7 @@ class CompensaViewer:
 
     def limpiar_filtros(self):
         """Limpia todos los filtros"""
+        #self.periodo_var.set("Todos")
         self.area_var.set("Todos")
         self.search_name_var.set("")
         self.search_cargo_var.set("")
@@ -687,6 +790,7 @@ class CompensaViewer:
             win.destroy()
             return
             
+        # Merge con datos de liquidaciones
         comparacion_df = pd.merge(df_a_comparar, self.settlements_df, on='rut', how='left')
         
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -708,6 +812,8 @@ class CompensaViewer:
         
         tk.Button(win, text="❌ Cerrar", command=win.destroy).pack(pady=10)
 
+
+
     def verificar_seleccion_para_comparar(self, event=None):
         """Habilita o deshabilita el botón de comparar según el número de elementos seleccionados."""
         seleccionados = self.tree.selection()
@@ -716,6 +822,22 @@ class CompensaViewer:
         else:
             self.btn_comparar.config(state='disabled')
 
+    def comparar_seleccionados(self):
+        """Recupera los RUTs de los empleados seleccionados y llama a la función de comparación."""
+        seleccionados = self.tree.selection()
+        if len(seleccionados) < 2:
+            messagebox.showwarning("Selección mínima", "Por favor, selecciona al menos dos personas para comparar.")
+            return
+        ruts_a_comparar = []
+        for item in seleccionados:
+            valores_fila = self.tree.item(item, 'values')
+            
+        nombres_seleccionados = [self.tree.item(item, 'values')[0] for item in seleccionados]
+
+        # Filtramos el DataFrame original para obtener los RUTs de los seleccionados
+        df_filtrado_para_ruts = self.data_df[self.data_df['Nombre'].isin(nombres_seleccionados)].copy()
+
+        #messagebox.showinfo("Prueba de Comparación", f"Empleados seleccionados para comparar:\n{nombres_seleccionados}")
 
     def comparar_seleccionados(self):
         """
@@ -773,7 +895,9 @@ class CompensaViewer:
         # Obtener y preparar los datos de cada persona
         data_by_person = []
         for rut in ruts:
-            df_persona_ultimo = self.data_df[self.data_df["rut"] == rut].sort_values('Fecha_Inicio_Cargo').iloc[-1]
+            # Aquí obtienes los datos de cada empleado, similar a como lo haces en abrir_ficha_persona
+            # Usar el último registro disponible para la comparación
+            df_persona_ultimo = self.data_df[self.data_df["rut"] == rut].sort_values('start_date').iloc[-1]
             
             # También puedes obtener datos adicionales del employees_df
             emp_info = self.employees_df[self.employees_df['rut'] == rut].iloc[0] if not self.employees_df[self.employees_df['rut'] == rut].empty else None
@@ -785,9 +909,9 @@ class CompensaViewer:
                 "Cargo": df_persona_ultimo['Cargo_Actual'],
                 "Área": df_persona_ultimo['Nombre_Area'],
                 "Antigüedad (años)": f"{df_persona_ultimo['Años_de_Servicio']:.1f}",
-                "Sueldo Base": f"${df_persona_ultimo['sueldo_base']:,.0f}",
+                "Sueldo Base": f"${df_persona_ultimo['Sueldo_Base']:,.0f}",
                 "Sueldo Líquido": "N/A", # Liquidaciones no están en data_df
-                "Edad": "N/A" 
+                "Edad": "N/A" # Hay que calcular la edad desde el cumpleaños
             }
             
             # Recuperar sueldo líquido de settlements_df
@@ -830,6 +954,7 @@ class CompensaViewer:
             if df_persona_base.empty:
                 continue
             
+            # Preparar los datos de sueldo base para el gráfico (similar a la ficha de persona)
             df_persona_base.sort_values(by="start_date", inplace=True)
             df_persona_base['start_month'] = df_persona_base['start_date'].dt.to_period('M').dt.to_timestamp()
             
@@ -837,9 +962,15 @@ class CompensaViewer:
             nombre = df_persona_base.iloc[-1]['Nombre']
             
             # Trazar sueldo base
-            ax.plot(df_persona_base['start_month'], df_persona_base['sueldo_base'], 
+            ax.plot(df_persona_base['start_month'], df_persona_base['Sueldo_Base'], 
                     marker='o', linestyle='-', color=colores(i), label=f'{nombre} (Base)')
-
+            
+            # Trazar sueldo líquido si está disponible
+            # df_liquidaciones_persona = self.settlements_df[self.settlements_df["rut"] == rut].copy()
+            # if not df_liquidaciones_persona.empty:
+            #     df_liquidaciones_persona.set_index('Pay_Period', inplace=True)
+            #     ax.plot(df_liquidaciones_persona.index, df_liquidaciones_persona['Liquido_a_Pagar'], 
+            #             marker='s', linestyle='--', color=colores(i), label=f'{nombre} (Líq.)')
 
         # Configuración del gráfico
         ax.legend(fontsize=8, loc='upper left')
@@ -865,10 +996,10 @@ class CompensaViewer:
     def actualizar_metricas(self):
         if self.data_df is None or self.data_df.empty:
             return
-        df_ultimo = self.data_df.sort_values(["person_id", "Año_Cargo", "Mes_Cargo"]).groupby("person_id").tail(1)
+        df_ultimo = self.data_df.sort_values(["person_id", "Año", "Mes"]).groupby("person_id").tail(1)
         df_filtrado = self.aplicar_filtros(df_ultimo)
         total = len(df_filtrado) if not df_filtrado.empty else 0
-        prom_teo = round(df_filtrado["sueldo_base"].mean(), 0) if not df_filtrado.empty else 0
+        prom_teo = round(df_filtrado["Sueldo_Base"].mean(), 0) if not df_filtrado.empty else 0
         prom_liq = round(df_filtrado["sueldo_base"].mean(), 0) if not df_filtrado.empty else 0
         prom_antiguedad = round(df_filtrado["Años_de_Servicio"].mean(), 1) if not df_filtrado.empty else 0
         self.total_emp_var.set(str(total))
@@ -883,12 +1014,12 @@ class CompensaViewer:
         if self.data_df is None or self.data_df.empty:
             return
         # Mostrar solo último registro por persona
-        df_ultimo = self.data_df.sort_values(["person_id", "Año_Cargo", "Mes_Cargo"]).groupby("person_id").tail(1)
+        df_ultimo = self.data_df.sort_values(["person_id", "Año", "Mes"]).groupby("person_id").tail(1)
         df_filtrado = self.aplicar_filtros(df_ultimo)
         self.actualizar_metricas()
         # Llenado de tabla
         for _, row in df_filtrado.iterrows():
-            sueldo_actual = f"${row['sueldo_base']:,.0f}" if pd.notna(row.get('sueldo_base')) else "N/A"
+            sueldo_actual = f"${row['Sueldo_Base']:,.0f}" if pd.notna(row.get('Sueldo_Base')) else "N/A"
             jefatura = row.get('Nombre_Jefe', 'N/A') if pd.notna(row.get('Nombre_Jefe')) else "N/A"
             cargo = row.get('Cargo_Actual', 'N/A')
             anos_servicio = f"{row.get('Años_de_Servicio', 0):.1f}"
@@ -900,19 +1031,6 @@ class CompensaViewer:
                 sueldo_actual,
                 anos_servicio
             ))
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     # ------------------------------------------------------
     # Ficha de Persona
@@ -934,11 +1052,11 @@ class CompensaViewer:
             messagebox.showwarning("Sin datos", "No hay datos cargados.")
             return
 
+        # Obtener datos históricos de la persona (sueldo base por rol)
         df_persona_base = self.data_df[self.data_df["rut"] == rut].copy()
         if df_persona_base.empty:
-            messagebox.showwarning("Sin datos", f"No se encontraron datos")
+            messagebox.showwarning("Sin datos", f"No se encontraron datos para rut: {rut}")
             return
-        
         df_persona_base.sort_values(by="start_date", inplace=True)
 
         # Alinear las fechas de inicio al primer día del mes para el gráfico
@@ -948,7 +1066,7 @@ class CompensaViewer:
         # Obtener datos de liquidaciones
         df_liquidaciones_persona = pd.DataFrame()
         if self.settlements_df is not None and not self.settlements_df.empty:
-            df_liquidaciones_persona = self.settlements_df[self.settlements_df["rut"] == rut].copy() 
+            df_liquidaciones_persona = self.settlements_df[self.settlements_df["rut"] == rut].copy()
             if not df_liquidaciones_persona.empty:
                 df_liquidaciones_persona.set_index('Pay_Period', inplace=True)
 
@@ -959,17 +1077,17 @@ class CompensaViewer:
         df_completo = pd.DataFrame(index=pd.date_range(start=start_date, end=end_date, freq='MS'))
         
         # Unir los datos de sueldo base y líquido
-        df_completo = df_completo.merge(df_persona_base[['sueldo_base']], left_index=True, right_index=True, how='left')
+        df_completo = df_completo.merge(df_persona_base[['Sueldo_Base']], left_index=True, right_index=True, how='left')
         df_completo = df_completo.merge(df_liquidaciones_persona[['Liquido_a_Pagar']], left_index=True, right_index=True, how='left')
 
         # Propagar el último valor conocido del sueldo base hacia adelante
-        df_completo['sueldo_base'] = df_completo['sueldo_base'].ffill()
+        df_completo['Sueldo_Base'] = df_completo['Sueldo_Base'].ffill()
 
         # Restablecer el índice de fecha a una columna
         df_completo.reset_index(inplace=True)
         df_completo.rename(columns={'index': 'Fecha'}, inplace=True)
-        df_completo['Año_cargo'] = df_completo['Fecha'].dt.year
-        df_completo['Mes_cargo'] = df_completo['Fecha'].dt.month  
+        df_completo['Año'] = df_completo['Fecha'].dt.year
+        df_completo['Mes'] = df_completo['Fecha'].dt.month
         
         # Replicar los datos de la última fila para la tarjeta de información
         last_row_info = df_persona_base.iloc[-1].copy()
@@ -993,8 +1111,8 @@ class CompensaViewer:
 
         # Pestaña Datos Generales (con gráfico abajo)
         self.crear_pestaña_datos_generales(notebook, df_completo, emp_info)
-        self.crear_pestaña_historial_liquidaciones(notebook, df_completo)
-        self.crear_pestaña_historial_jobs(notebook, df_completo)
+        # Pestaña Historial Completo
+        self.crear_pestaña_historial(notebook, df_completo)
 
         # Seleccionar la primera pestaña por defecto
         notebook.select(0)
@@ -1002,7 +1120,7 @@ class CompensaViewer:
     def crear_pestaña_datos_generales(self, notebook, df_persona, emp_info):
         """Pestaña compacta de datos + gráfico de evolución abajo"""
         frame = ttk.Frame(notebook)
-        notebook.add(frame, text="Resumen General")
+        notebook.add(frame, text="Datos + Evolución")
 
         # Contenedor con scroll por si hay pantallas más pequeñas
         canvas = tk.Canvas(frame, bg='#f8f9fa', highlightthickness=0)
@@ -1031,7 +1149,6 @@ class CompensaViewer:
                 tk.Label(c, text=f"{k}:", font=('Arial', 10, 'bold'), bg='white', fg='#34495e').grid(row=i, column=0, sticky='w', pady=3, padx=(0, 8))
                 tk.Label(c, text=str(v), font=('Arial', 10), bg='white', fg='#2c3e50').grid(row=i, column=1, sticky='w', pady=3)
 
-
         # Información Personal
         card("📋 Información Personal", [
             ("rut", ultimo.get('rut', 'N/A')),
@@ -1041,14 +1158,11 @@ class CompensaViewer:
             ("Fecha Nacimiento", (emp_info.get('birthday', 'N/A') if emp_info is not None else 'N/A')),
         ])
 
-        # sueldo base
-        sueldo_base_actual = ultimo.get('sueldo_base', None)
-        sueldo_base = f"${sueldo_base_actual:,.0f}" if pd.notna(sueldo_base_actual) else "N/A"
-        
-        
-        #sueldo líquido
+        # Información Laboral
+        sueldo_actual = ultimo.get('Sueldo_Base', None)
+        sueldo_txt = f"${sueldo_actual:,.0f}" if pd.notna(sueldo_actual) else "N/A"
         sueldo_liquido_actual = ultimo.get('Liquido_a_Pagar', None)
-        sueldo_liquido = f"${sueldo_liquido_actual:,.0f}" if pd.notna(sueldo_liquido_actual) else "N/A"
+        sueldo_liq_txt = f"${sueldo_liquido_actual:,.0f}" if pd.notna(sueldo_liquido_actual) else "N/A"
 
         card("💼 Información Laboral", [
             ("Cargo Actual", ultimo.get('Cargo_Actual', 'N/A')),
@@ -1056,8 +1170,8 @@ class CompensaViewer:
             ("Jefe Directo", ultimo.get('Nombre_Jefe', 'N/A')),
             ("Tipo Contrato", ultimo.get('Tipo_Contrato', 'N/A')),
             ("Años de Servicio", f"{ultimo.get('Años_de_Servicio', 0):.1f} años"),
-            ("Sueldo Base", sueldo_base),
-            ("Sueldo Líquido", sueldo_liquido),
+            ("Sueldo Base", sueldo_txt),
+            ("Sueldo Líquido", sueldo_liq_txt),
         ])
 
         # Formación Académica
@@ -1077,9 +1191,11 @@ class CompensaViewer:
         else:
             fig, ax = plt.subplots(figsize=(10, 4.8))
             
-            ax.plot(df_sueldo_plot["Fecha"], df_sueldo_plot["sueldo_base"], marker='o', linewidth=2, label="Sueldo Base")
+            # El eje X ahora es la columna 'Fecha' que creaste al combinar los dataframes
+            ax.plot(df_sueldo_plot["Fecha"], df_sueldo_plot["Sueldo_Base"], marker='o', linewidth=2, label="Sueldo Base")
             
             if "Liquido_a_Pagar" in df_sueldo_plot.columns and not df_sueldo_plot["Liquido_a_Pagar"].isna().all():
+                # Asegúrate de que los valores líquidos se tracen en las fechas correctas
                 ax.plot(df_sueldo_plot["Fecha"], df_sueldo_plot["Liquido_a_Pagar"], marker='s', linewidth=2, label="Sueldo Líquido")
             
             ax.legend(fontsize=9)
@@ -1099,8 +1215,8 @@ class CompensaViewer:
             canvas_chart.get_tk_widget().pack(fill='both', expand=True)
 
             # Stats compactas
-            primer_base = df_sueldo_plot["sueldo_base"].iloc[0]
-            ultimo_val_base = df_sueldo_plot["sueldo_base"].iloc[-1]
+            primer_base = df_sueldo_plot["Sueldo_Base"].iloc[0]
+            ultimo_val_base = df_sueldo_plot["Sueldo_Base"].iloc[-1]
             variacion_base = ultimo_val_base - primer_base
             var_pct_base = (ultimo_val_base / primer_base - 1) * 100 if primer_base > 0 else 0
 
@@ -1120,73 +1236,39 @@ class CompensaViewer:
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-    def crear_pestaña_historial_liquidaciones(self, notebook, df_persona):
-        """Crea la pestaña de historial completo"""
-        frame = ttk.Frame(notebook)
-        notebook.add(frame, text="Historial liquidaciones")
-        tree_frame = tk.Frame(frame)
-        tree_frame.pack(fill='both', expand=True, padx=10, pady=10)
-        cols = ("Período", "Sueldo Base", "Sueldo Líquido")
-        tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=15)
-        anchos = [80, 120, 120]
-        for i, col in enumerate(cols):
-            tree.heading(col, text=col)
-            tree.column(col, anchor="center", width=anchos[i])
-        
-        # Cambio 1: Filtrar el DataFrame para incluir solo registros con Sueldo Líquido
-        df_con_liquido = df_persona.dropna(subset=['Liquido_a_Pagar']).copy()
-        
-        # Cambio 2: Si no hay datos de líquido, no se mostrará nada en esta pestaña
-        if df_con_liquido.empty:
-            tk.Label(tree_frame, text="No hay liquidaciones registradas.", font=('Arial', 12)).pack(pady=20)
-        else:
-            # Cambio 3: Obtener la fecha del primer dato de liquidación
-            primer_liquido_fecha = df_con_liquido['Fecha'].min()
-            
-            # Cambio 4: Filtrar el DataFrame original para incluir todos los datos hasta el primer líquido
-            df_historial = df_persona[df_persona['Fecha'] >= primer_liquido_fecha].copy()
-            
-            df_historial_ordenado = df_historial.sort_values("Fecha", ascending=False)
-            
-            for _, row in df_historial_ordenado.iterrows():
-                sueldo_base = f"${row['sueldo_base']:,.0f}" if pd.notna(row.get('sueldo_base')) else "N/A"
-                sueldo_liquido = f"${row['Liquido_a_Pagar']:,.0f}" if pd.notna(row.get('Liquido_a_Pagar')) else "N/A"
-                tree.insert("", "end", values=(
-                    row.get("Fecha").strftime("%Y-%m") if pd.notna(row.get("Fecha")) else "N/A",
-                    sueldo_base,
-                    sueldo_liquido,
-                )) 
-            # Scrollbars
-            scrollbar_v = ttk.Scrollbar(tree_frame, orient='vertical', command=tree.yview)
-            scrollbar_h = ttk.Scrollbar(tree_frame, orient='horizontal', command=tree.xview)
-            tree.configure(yscrollcommand=scrollbar_v.set, xscrollcommand=scrollbar_h.set)
-            tree.pack(side='left', fill='both', expand=True)
-            scrollbar_v.pack(side='right', fill='y')
-            scrollbar_h.pack(side='bottom', fill='x')
-        
-    def crear_pestaña_historial_jobs(self, notebook, df_persona):
+    def crear_pestaña_historial(self, notebook, df_persona):
         """Crea la pestaña de historial completo"""
         frame = ttk.Frame(notebook)
         notebook.add(frame, text="Historial Completo")
+
+        # Título
         tk.Label(frame, text=f"Historial Completo - {df_persona['Nombre'].iloc[0]}", font=('Arial', 14, 'bold')).pack(pady=10)
+
+        # Crear treeview para historial
         tree_frame = tk.Frame(frame)
         tree_frame.pack(fill='both', expand=True, padx=10, pady=10)
-        cols = ("Período", "Sueldo Base", "Sueldo Líquido")
+        cols = ("Período", "Cargo", "Área", "Sueldo Base", "Sueldo Líquido", "Años de Servicio")
         tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=15)
-        anchos = [80, 120, 120]
+        anchos = [80, 120, 120, 120, 120, 120]
         for i, col in enumerate(cols):
             tree.heading(col, text=col)
             tree.column(col, anchor="center", width=anchos[i])
-        df_ordenado = df_persona.sort_values(["Año_Cargo", "Mes_Cargo"], ascending=False)
+
+        # Llenar con datos históricos
+        df_ordenado = df_persona.sort_values(["Año", "Mes"], ascending=False)
         for _, row in df_ordenado.iterrows():
-            sueldo_base = f"${row['sueldo_base']:,.0f}" if pd.notna(row.get('sueldo_base')) else "N/A"
+            sueldo_base = f"${row['Sueldo_Base']:,.0f}" if pd.notna(row.get('Sueldo_Base')) else "N/A"
             sueldo_liquido = f"${row['Liquido_a_Pagar']:,.0f}" if pd.notna(row.get('Liquido_a_Pagar')) else "N/A"
+            anos_servicio = f"{row['Años_de_Servicio']:.1f}" if pd.notna(row.get('Años_de_Servicio')) else "N/A"
             tree.insert("", "end", values=(
-                row.get("Fecha").strftime("%Y-%m") if pd.notna(row.get("Fecha")) else "N/A",
+                row.get("Pay_Period", ""),
+                row.get("Cargo_Actual", ""),
+                row.get("Nombre_Area", ""),
                 sueldo_base,
                 sueldo_liquido,
+                anos_servicio
             ))
-            
+
         # Scrollbars
         scrollbar_v = ttk.Scrollbar(tree_frame, orient='vertical', command=tree.yview)
         scrollbar_h = ttk.Scrollbar(tree_frame, orient='horizontal', command=tree.xview)
@@ -1194,6 +1276,139 @@ class CompensaViewer:
         tree.pack(side='left', fill='both', expand=True)
         scrollbar_v.pack(side='right', fill='y')
         scrollbar_h.pack(side='bottom', fill='x')
+
+    # ------------------------------------------------------
+    # Funciones existentes (adaptadas)
+    # ------------------------------------------------------
+    def mostrar_evolucion(self):
+        """Abre ventana de evolución salarial general"""
+        if self.data_df is None or self.data_df.empty:
+            messagebox.showwarning("Sin datos", "No hay información cargada.")
+            return
+        # Ventana secundaria
+        win = tk.Toplevel(self.root)
+        win.title("Evolución Salarial General")
+        win.geometry("1000x700+100+100")
+        win.configure(bg='#f0f0f0')
+        win.grab_set()
+
+        # Título
+        tk.Label(win, text="📈 Análisis de Evolución Salarial General", font=('Arial', 16, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(pady=15)
+
+        # Frame de filtros
+        filtros_frame = tk.LabelFrame(win, text="Seleccionar Análisis", font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50', padx=15, pady=15)
+        filtros_frame.pack(fill='x', padx=20, pady=10)
+
+        # Filtro por área
+        tk.Label(filtros_frame, text="🏢 Filtrar por Área:", bg='#f0f0f0', font=('Arial', 11, 'bold')).pack(anchor='w', pady=5)
+        area_var = tk.StringVar(value="")
+        areas = sorted(self.data_df["Nombre_Area"].dropna().unique())
+        area_combo = ttk.Combobox(filtros_frame, textvariable=area_var, values=areas, width=30)
+        area_combo.pack(anchor='w', pady=5)
+
+        # Frame para gráfico
+        grafico_frame = tk.Frame(win, bg='#f0f0f0')
+        grafico_frame.pack(fill='both', expand=True, padx=20, pady=10)
+
+        def generar_grafico():
+            # Limpiar frame anterior
+            for widget in grafico_frame.winfo_children():
+                widget.destroy()
+            fig, ax = plt.subplots(figsize=(10, 5))
+            df = self.data_df.copy()
+            if area_var.get():
+                # Análisis por área
+                df = df[df["Nombre_Area"] == area_var.get()]
+                if df.empty:
+                    messagebox.showinfo("Info", "No hay datos para esa área.")
+                    return
+                # Agrupar por período
+                df_grouped = df.groupby("Período").agg({
+                    "Sueldo_Base": "mean",
+                    "sueldo_base": "mean",
+                    "person_id": "nunique"
+                }).reset_index()
+                ax.plot(df_grouped["Período"], df_grouped["Sueldo_Base"], marker='o', linewidth=2, label="Sueldo Teórico Promedio")
+                ax.plot(df_grouped["Período"], df_grouped["sueldo_base"], marker='s', linewidth=2, label="Sueldo Liquidación Promedio")
+                ax.set_title(f"Evolución Salarial Promedio - {area_var.get()}", fontsize=14, fontweight='bold')
+            else:
+                messagebox.showwarning("Filtro", "Selecciona un área.")
+                return
+
+            # Configurar gráfico
+            ax.legend(fontsize=10)
+            ax.set_xlabel("Período", fontsize=12)
+            ax.set_ylabel("Sueldo ($)", fontsize=12)
+            ax.grid(True, alpha=0.3)
+            ax.tick_params(axis='x', rotation=45)
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+            plt.tight_layout()
+            # Embebido en Tkinter
+            canvas = FigureCanvasTkAgg(fig, master=grafico_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill='both', expand=True)
+
+        # Botones
+        btn_frame = tk.Frame(filtros_frame, bg='#f0f0f0')
+        btn_frame.pack(fill='x', pady=10)
+        tk.Button(btn_frame, text="📈 Generar Gráfico", command=generar_grafico, bg='#27ae60', fg='white', font=('Arial', 12, 'bold'), relief='flat', padx=20, pady=8).pack(side='left', padx=10)
+        tk.Button(btn_frame, text="❌ Cerrar", command=win.destroy, bg='#95a5a6', fg='white', font=('Arial', 12, 'bold'), relief='flat', padx=20, pady=8).pack(side='right', padx=10)
+
+    def mostrar_resumen_areas(self):
+        """Muestra resumen estadístico por áreas"""
+        if self.data_df is None or self.data_df.empty:
+            messagebox.showinfo("Sin datos", "No hay datos para mostrar.")
+            return
+        # Usar solo último registro por persona
+        df_ultimo = self.data_df.sort_values(["person_id", "Año", "Mes"]).groupby("person_id").tail(1)
+
+        # Crear ventana de resumen
+        win = tk.Toplevel(self.root)
+        win.title("📊 Resumen por Área")
+        win.geometry("800x600+200+100")
+        win.configure(bg='#f0f0f0')
+        win.grab_set()
+        tk.Label(win, text="📊 Resumen Estadístico por Área", font=('Arial', 14, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(pady=15)
+
+        # Crear treeview
+        columns = ('Área', 'Empleados', 'Sueldo Teórico Prom.', 'Sueldo Liquidación Prom.', 'Diferencia Prom.')
+        tree = ttk.Treeview(win, columns=columns, show='headings', height=15)
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=150, anchor='center')
+
+        # Calcular resumen por área
+        resumen = df_ultimo.groupby('Nombre_Area').agg({
+            'person_id': 'nunique',
+            'Sueldo_Base': 'mean',
+            'sueldo_base': 'mean'
+        }).reset_index()
+        resumen['Diferencia'] = resumen['Sueldo_Base'] - resumen['sueldo_base']
+
+        # Llenar treeview
+        for _, row in resumen.iterrows():
+            tree.insert('', 'end', values=(
+                row['Nombre_Area'],
+                int(row['person_id']),
+                f"${row['Sueldo_Base']:,.0f}",
+                f"${row['sueldo_base']:,.0f}",
+                f"${row['Diferencia']:,.0f}"
+            ))
+        tree.pack(fill='both', expand=True, padx=20, pady=10)
+        tk.Button(win, text="❌ Cerrar", command=win.destroy, bg='#95a5a6', fg='white', font=('Arial', 11, 'bold'), relief='flat', padx=20, pady=10).pack(pady=15)
+
+    def exportar_excel(self):
+        """Exporta datos filtrados a Excel"""
+        if self.data_df is None or self.data_df.empty:
+            messagebox.showwarning("Sin datos", "No hay datos para exportar.")
+            return
+        try:
+            df_export = self.aplicar_filtros(self.data_df)
+            filename = f"compensaciones_export_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+            df_export.to_excel(filename, index=False)
+            messagebox.showinfo("✅ Exportado", f"Datos exportados a: {filename}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error exportando: {e}")
 
 
 # ----------------------------------------------------------
