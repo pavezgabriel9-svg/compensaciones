@@ -12,23 +12,23 @@ from typing import Dict, List, Any, Optional
 import cryptography
 
 #envio de correos por outlook, entorno windows
-import win32com.client as win32
-import pythoncom
+# import win32com.client as win32
+# import pythoncom
 
 #-----------------------------------------------------------
 #                    Conexión BD
 #-----------------------------------------------------------
 # Entorno macOS
-# DB_HOST = "localhost"
-# DB_USER = "root"
-# DB_PASSWORD = "cancionanimal"
-# DB_NAME = "prueba_buk"
+DB_HOST = "localhost"
+DB_USER = "root"
+DB_PASSWORD = "cancionanimal"
+DB_NAME = "conexion_buk"
 
 # Entorno Windows
-DB_HOST = "192.168.245.33"
-DB_USER = "compensaciones_rrhh"
-DB_PASSWORD = "_Cramercomp2025_"
-DB_NAME = "rrhh_app"
+# DB_HOST = "192.168.245.33"
+# DB_USER = "compensaciones_rrhh"
+# DB_PASSWORD = "_Cramercomp2025_"
+# DB_NAME = "rrhh_app"
 
 mail_test_gabriel = "gpavez@cramer.cl"  
 
