@@ -7,28 +7,29 @@ import pymysql
 import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+from html_generators import generar_html_reporte_seleccionadas, generar_html_para_jefe
 
 #entorno mac
-import cryptography
+# import cryptography
 
 #envio de correos por outlook, entorno windows
-# import win32com.client as win32
-# import pythoncom
+import win32com.client as win32
+import pythoncom
 
 #-----------------------------------------------------------
 #                    Conexión BD
 #-----------------------------------------------------------
 # Entorno macOS
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "cancionanimal"
-DB_NAME = "conexion_buk"
+# DB_HOST = "localhost"
+# DB_USER = "root"
+# DB_PASSWORD = "cancionanimal"
+# DB_NAME = "conexion_buk"
 
 # Entorno Windows
-# DB_HOST = "192.168.245.33"
-# DB_USER = "compensaciones_rrhh"
-# DB_PASSWORD = "_Cramercomp2025_"
-# DB_NAME = "rrhh_app"
+DB_HOST = "192.168.245.33"
+DB_USER = "compensaciones_rrhh"
+DB_PASSWORD = "_Cramercomp2025_"
+DB_NAME = "rrhh_app"
 
 mail_test_gabriel = "gpavez@cramer.cl"  
 
@@ -404,7 +405,7 @@ class DashboardAlertas:
                     font=('Arial', 9)).pack(anchor='w', padx=10, pady=5)
         
         # Checkbox para modo de prueba
-        modo_prueba_var = tk.BooleanVar(value=False)
+        modo_prueba_var = tk.BooleanVar(value=True)
         tk.Checkbutton(opciones_frame, text=f"Modo prueba (enviar todo a {mail_test_gabriel} en lugar de a los jefes)", 
                     variable=modo_prueba_var, bg='#f0f0f0', fg='#e67e22',
                     font=('Arial', 9)).pack(anchor='w', padx=10, pady=5)
@@ -606,7 +607,7 @@ class DashboardAlertas:
             mail = outlook.CreateItem(0)
             mail.To = mail_test_gabriel
             #mail.CC = "bgacitua@cramer.cl"
-            mail.Subject = f"Alertas de contratos seleccionadas - {datetime.now().strftime('%d/%m/%Y')}"
+            mail.Subject = f"Alertas de contratos pendientes de revisión"
 
             # Generar HTML del reporte solo para seleccionadas
             html = self._generar_html_reporte_seleccionadas(alertas_seleccionadas)
@@ -614,7 +615,7 @@ class DashboardAlertas:
             mail.Send()
 
             pythoncom.CoUninitialize()
-            messagebox.showinfo("✅ Enviado", f"Reporte con {num_seleccionadas} alerta(s) enviado a:\n• {mail_test_gabriel}\n")
+            messagebox.showinfo("Enviado", f"Reporte con {num_seleccionadas} alerta(s) enviado a:\n• {mail_test_gabriel}\n")
             
         except Exception as e:
             messagebox.showerror("Error", f"Error enviando correo:\n{e}")
@@ -790,7 +791,7 @@ class DashboardAlertas:
                 </table>
                 """
             else:
-                html += "<p>✅ Este colaborador/a no registra ausencias, permisos y/o licencias activas.</p>"
+                html += "<p>Este colaborador/a no registra ausencias, permisos y/o licencias activas.</p>"
                 
             html += """
             </div>
@@ -833,16 +834,17 @@ class DashboardAlertas:
                 table {{ border-collapse: collapse; width: 100%; margin-top: 10px; }}
                 th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
                 th {{ background-color: #34495e; color: white; }}
-                .resumen {{ background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }}
             </style>
         </head>
         <body>
+    
+            <p>Estimado/a, junto con saludar</p>
+            <p>Se adjunta el listado de colaboradores con contratos pendientes de revisión:</p>
+
             <div class="resumen">
                 <h3>Reporte Vencimiento de Contrato</h3>
             </div>
-            
-            <p>Estimado/a, junto con saludar</p>
-            <p>Se adjunta el listado de colaboradores con contratos pendientes de revisión:</p>
+        
         """
 
         # Bucle para crear una sección por cada alerta seleccionada
@@ -857,7 +859,7 @@ class DashboardAlertas:
             # HTML para la alerta del empleado
             html += f"""
             <div class="alerta-container {clase_css}">
-                <div class="alerta-header">✅ Termino Contrato: {row['Empleado']}</div>
+                <div class="alerta-header">Termino Contrato: {row['Empleado']}</div>
                 <p><strong>Cargo:</strong> {row['Cargo']}</p>
                 <p><strong>Motivo:</strong> {row['Motivo']}</p>
                 <p><strong>Jefe Directo:</strong> {row['Jefe']} </p>
@@ -899,13 +901,7 @@ class DashboardAlertas:
 
         html += f"""
         <br>
-        <div class="resumen">
-            <p><strong>Resumen del envío:</strong></p>
-            <ul>
-                <li>Alertas seleccionadas: {len(alertas_seleccionadas)}</li>
-                <li>Empleados: {', '.join(alertas_seleccionadas['Empleado'].tolist())}</li>
-            </ul>
-        </div>
+
         <p><em><strong>Generado automáticamente por el Sistema de Alertas de Contratos de RRHH</strong></em></p>
         </body>
         </html>
