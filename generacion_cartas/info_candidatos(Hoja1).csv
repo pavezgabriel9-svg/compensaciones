@@ -1,4 +1,5 @@
-﻿fecha_cierre;nombre;cargo;lugar_de_trabajo;jornada_de_trabajo;tipo_de_contrato;fecha_de_inicio;gerencia;sueldo_base;bono;movilizacion;correo_analista;status;
-23/09/2025;Marcelo Zuñiga;Operario Esencias ;"Lucerna 4925; Cerrillos; Santiago";Lunes a Viernes;Plazo Fijo (1 mes - 2 meses), Sujeto a Renovación ;Lunes 29 de septiembre de 2025;Gerencia de Operaciones;550000;Normal;Normal;jguinez@cramer.cl;pendiente;
-23/09/2025;Marcos Gonzalez;Asistente de servicios generales ;"Lucerna 4925; Cerrillos; Santiago";Lunes a Viernes;Plazo Fijo (1 mes - 2 meses), Sujeto a Renovación ;Lunes 29 de septiembre de 2025;Gerencia de personas y Servicios Generales;550000;Normal;Normal;eleon@cramer.cl;pendiente;
-
+﻿fecha_cierre;nombre;cargo;lugar_de_trabajo;jornada_de_trabajo;tipo_de_contrato;fecha_de_inicio;gerencia;sueldo_base;bono;movilizacion;correo_analista;status;;;;;;;;;
+25/09/2025;Sebastian Ramirez;Operario Envasado;"Lucerna 4925; Cerrillos; Santiago";Lunes a Viernes;Plazo Fijo (1 mes - 2 meses), Sujeto a Renovación ;Lunes 29 de septiembre de 2025;Gerencia de Operaciones;550000;Normal;Normal;jguinez@cramer.cl;pendiente;;;;;;;;;
+25/09/2025;Victor Inostroza;Operario Envasado;"Lucerna 4925; Cerrillos; Santiago";Lunes a Viernes;Plazo Fijo (1 mes - 2 meses), Sujeto a Renovación ;Lunes 29 de septiembre de 2025;Gerencia de Operaciones;550000;Normal;Normal;jguinez@cramer.cl;pendiente;;;;;;;;;
+25/09/2025;Angie Seguel;Asistente de Laboratorio ;"Lucerna 4925; Cerrillos; Santiago";Lunes a Viernes;Plazo Fijo (1 mes - 2 meses), Sujeto a Renovación ;Lunes 29 de septiembre de 2025;Laboratorio de Sabores;655000;Normal;Normal;jguinez@cramer.cl;pendiente;;;;;;;;;
+25/09/2025;Naska Salgado;Asistente de Laboratorio ;"Lucerna 4925; Cerrillos; Santiago";Lunes a Viernes;Plazo Fijo (1 mes - 2 meses), Sujeto a Renovación ;Lunes 29 de septiembre de 2025;Laboratorio de Sabores;655000;Normal;Normal;jguinez@cramer.cl;pendiente;;;;;;;;;
