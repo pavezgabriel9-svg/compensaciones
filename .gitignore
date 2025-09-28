@@ -4,3 +4,8 @@ generacion_cartas/cartas_generadas/
 .venv/
 venv/
 proyecto_poke_api/venv/
+
+# Ignorar __pycache__ y archivos compilados
+__pycache__/
+*.py[cod]
+*.pyo

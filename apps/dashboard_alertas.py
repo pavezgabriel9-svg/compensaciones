@@ -19,19 +19,19 @@ import pythoncom
 #-----------------------------------------------------------
 #                    Conexión BD
 #-----------------------------------------------------------
-# Entorno macOS
-# DB_HOST = "localhost"
-# DB_USER = "root"
-# DB_PASSWORD = "cancionanimal"
-# DB_NAME = "conexion_buk"
+# # Entorno macOS
+DB_HOST = "localhost"
+DB_USER = "root"
+DB_PASSWORD = "cancionanimal"
+DB_NAME = "conexion_buk"
 
-# Entorno Windows
-DB_HOST = "192.168.245.33"
-DB_USER = "compensaciones_rrhh"
-DB_PASSWORD = "_Cramercomp2025_"
-DB_NAME = "rrhh_app"
+# # Entorno Windows
+# DB_HOST = "192.168.245.33"
+# DB_USER = "compensaciones_rrhh"
+# DB_PASSWORD = "_Cramercomp2025_"
+# DB_NAME = "rrhh_app"
 
-mail_test_gabriel = "gpavez@cramer.cl"  
+# mail_test_gabriel = "gpavez@cramer.cl"  
 
 #-----------------------------------------------------------
 #             Dashboard de Alertas de Contratos
@@ -47,257 +47,257 @@ class DashboardAlertas:
         self.setup_ui()
         self.cargar_alertas()
 
-    def _configurar_ventana_principal(self):
-        """Configura la ventana principal"""
-        self.root.title("Dashboard de Alertas de Contratos")
-        self.root.minsize(1200, 700)
-        self.root.geometry("1300x800+50+50")
-        self.root.configure(bg='#f0f0f0')
+    # def _configurar_ventana_principal(self):
+    #     """Configura la ventana principal"""
+    #     self.root.title("Dashboard de Alertas de Contratos")
+    #     self.root.minsize(1200, 700)
+    #     self.root.geometry("1300x800+50+50")
+    #     self.root.configure(bg='#f0f0f0')
 
-    def conectar_bd(self):
-        """Conecta a la base de datos"""
-        try:
-            return pymysql.connect(
-                host=DB_HOST,
-                user=DB_USER,
-                password=DB_PASSWORD,
-                database=DB_NAME,
-                charset="utf8mb4"
-            )
-        except Exception as e:
-            messagebox.showerror("Error BD", f"Error conectando a la base de datos:\n{e}")
-            return None
+    # def conectar_bd(self):
+    #     """Conecta a la base de datos"""
+    #     try:
+    #         return pymysql.connect(
+    #             host=DB_HOST,
+    #             user=DB_USER,
+    #             password=DB_PASSWORD,
+    #             database=DB_NAME,
+    #             charset="utf8mb4"
+    #         )
+    #     except Exception as e:
+    #         messagebox.showerror("Error BD", f"Error conectando a la base de datos:\n{e}")
+    #         return None
 
-    def obtener_alertas(self):
-        """Obtiene los datos desde la base de datos"""
-        conexion = self.conectar_bd()
-        if not conexion:
-            return pd.DataFrame()
+    # def obtener_alertas(self):
+    #     """Obtiene los datos desde la base de datos"""
+    #     conexion = self.conectar_bd()
+    #     if not conexion:
+    #         return pd.DataFrame()
         
-        try:
-            cursor = conexion.cursor()
-            sql = """
-            SELECT 
-                id, employee_name, employee_rut, employee_role,
-                employee_area_name, boss_name, boss_email,
-                alert_date, alert_reason,
-                days_since_start, employee_start_date,
-                CAST(DATEDIFF(alert_date, CURDATE()) AS SIGNED) as dias_hasta_alerta,
-                is_urgent, requires_action, alert_type
-            FROM contract_alerts 
-            WHERE processed = FALSE
-            ORDER BY alert_date ASC
-            """
-            cursor.execute(sql)
-            rows = cursor.fetchall()
+    #     try:
+    #         cursor = conexion.cursor()
+    #         sql = """
+    #         SELECT 
+    #             id, employee_name, employee_rut, employee_role,
+    #             employee_area_name, boss_name, boss_email,
+    #             alert_date, alert_reason,
+    #             days_since_start, employee_start_date,
+    #             CAST(DATEDIFF(alert_date, CURDATE()) AS SIGNED) as dias_hasta_alerta,
+    #             is_urgent, requires_action, alert_type
+    #         FROM contract_alerts 
+    #         WHERE processed = FALSE
+    #         ORDER BY alert_date ASC
+    #         """
+    #         cursor.execute(sql)
+    #         rows = cursor.fetchall()
 
-            cols = ["ID", "Empleado", "RUT", "Cargo", "Área", "Jefe", "Email Jefe",
-                    "Fecha alerta", "Motivo", "Días desde inicio", "Fecha inicio",
-                    "Días hasta alerta", "Urgente", "Requiere Acción", "Tipo Alerta"]
+    #         cols = ["ID", "Empleado", "RUT", "Cargo", "Área", "Jefe", "Email Jefe",
+    #                 "Fecha alerta", "Motivo", "Días desde inicio", "Fecha inicio",
+    #                 "Días hasta alerta", "Urgente", "Requiere Acción", "Tipo Alerta"]
             
-            df = pd.DataFrame(rows, columns=cols)
-            cursor.close()
-            conexion.close()
-            return df
+    #         df = pd.DataFrame(rows, columns=cols)
+    #         cursor.close()
+    #         conexion.close()
+    #         return df
             
-        except Exception as e:
-            messagebox.showerror("Error", f"Error obteniendo alertas:\n{e}")
-            conexion.close()
-            return pd.DataFrame()
+    #     except Exception as e:
+    #         messagebox.showerror("Error", f"Error obteniendo alertas:\n{e}")
+    #         conexion.close()
+    #         return pd.DataFrame()
     
     
-    def obtener_incidencias(self):
-        """Obtiene los datos de incidencias desde la base de datos."""
-        conexion = self.conectar_bd()
-        if not conexion:
-            print("sin conexion")
-            return pd.DataFrame()
-        else:
-            print("Conexión exitosa")
+    # def obtener_incidencias(self):
+    #     """Obtiene los datos de incidencias desde la base de datos."""
+    #     conexion = self.conectar_bd()
+    #     if not conexion:
+    #         print("sin conexion")
+    #         return pd.DataFrame()
+    #     else:
+    #         print("Conexión exitosa")
 
-        try:
-            cursor = conexion.cursor()
-            sql = """
-            SELECT
-                rut_empleado AS employee_rut ,
-                fecha_inicio,
-                fecha_fin,
-                tipo_permiso
-            FROM consolidado_incidencias
-            """
-            cursor.execute(sql)
-            rows = cursor.fetchall()
+    #     try:
+    #         cursor = conexion.cursor()
+    #         sql = """
+    #         SELECT
+    #             rut_empleado AS employee_rut ,
+    #             fecha_inicio,
+    #             fecha_fin,
+    #             tipo_permiso
+    #         FROM consolidado_incidencias
+    #         """
+    #         cursor.execute(sql)
+    #         rows = cursor.fetchall()
             
-            cols = ["rut_empleado", "fecha_inicio", "fecha_fin", "tipo_permiso"]
-            incidencias_df = pd.DataFrame(rows, columns=cols)
-            cursor.close()
-            conexion.close()
-            return incidencias_df
+    #         cols = ["rut_empleado", "fecha_inicio", "fecha_fin", "tipo_permiso"]
+    #         incidencias_df = pd.DataFrame(rows, columns=cols)
+    #         cursor.close()
+    #         conexion.close()
+    #         return incidencias_df
             
-        except Exception as e:
-            messagebox.showerror("Error", f"Error obteniendo incidencias:\n{e}")
-            conexion.close()
-            return pd.DataFrame()
+    #     except Exception as e:
+    #         messagebox.showerror("Error", f"Error obteniendo incidencias:\n{e}")
+    #         conexion.close()
+    #         return pd.DataFrame()
         
 
 
-    def setup_ui(self):
-        """Configura la interfaz de usuario"""
-        self._crear_titulo()
+    # def setup_ui(self):
+    #     """Configura la interfaz de usuario"""
+    #     self._crear_titulo()
         
-        # Frame principal
-        main_frame = tk.Frame(self.root, bg='#f0f0f0')
-        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+    #     # Frame principal
+    #     main_frame = tk.Frame(self.root, bg='#f0f0f0')
+    #     main_frame.pack(fill='both', expand=True, padx=10, pady=10)
 
-        # Secciones
-        self.crear_seccion_metricas(main_frame)
-        self.crear_seccion_tabla(main_frame)
-        self.crear_seccion_acciones(main_frame)
+    #     # Secciones
+    #     self.crear_seccion_metricas(main_frame)
+    #     self.crear_seccion_tabla(main_frame)
+    #     self.crear_seccion_acciones(main_frame)
 
-    def _crear_titulo(self):
-        """Crea el título de la aplicación"""
-        title_frame = tk.Frame(self.root, bg='#e74c3c', height=60)
-        title_frame.pack(fill='x')
-        title_frame.pack_propagate(False)
+    # def _crear_titulo(self):
+    #     """Crea el título de la aplicación"""
+    #     title_frame = tk.Frame(self.root, bg='#e74c3c', height=60)
+    #     title_frame.pack(fill='x')
+    #     title_frame.pack_propagate(False)
         
-        title_label = tk.Label(title_frame, text="Alertas de Contratos", 
-                              font=('Arial', 16, 'bold'), fg='white', bg='#e74c3c')
-        title_label.pack(expand=True, pady=15)
+    #     title_label = tk.Label(title_frame, text="Alertas de Contratos", 
+    #                           font=('Arial', 16, 'bold'), fg='white', bg='#e74c3c')
+    #     title_label.pack(expand=True, pady=15)
 
-    def crear_seccion_metricas(self, parent):
-        """Crea la sección de métricas principales"""
-        metrics_frame = tk.LabelFrame(parent, text="Resumen de Alertas", 
-                                     font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50', 
-                                     padx=15, pady=15)
-        metrics_frame.pack(fill='x', pady=(0, 10))
+    # def crear_seccion_metricas(self, parent):
+    #     """Crea la sección de métricas principales"""
+    #     metrics_frame = tk.LabelFrame(parent, text="Resumen de Alertas", 
+    #                                  font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50', 
+    #                                  padx=15, pady=15)
+    #     metrics_frame.pack(fill='x', pady=(0, 10))
 
-        # Frame para métricas en fila
-        metrics_row = tk.Frame(metrics_frame, bg='#f0f0f0')
-        metrics_row.pack(fill='x')
+    #     # Frame para métricas en fila
+    #     metrics_row = tk.Frame(metrics_frame, bg='#f0f0f0')
+    #     metrics_row.pack(fill='x')
 
-        # Variables para métricas
-        self.total_alertas_var = tk.StringVar(value="0")
-        self.urgentes_var = tk.StringVar(value="0")
-        self.requieren_accion_var = tk.StringVar(value="0")
-        self.jefes_afectados_var = tk.StringVar(value="0")
+    #     # Variables para métricas
+    #     self.total_alertas_var = tk.StringVar(value="0")
+    #     self.urgentes_var = tk.StringVar(value="0")
+    #     self.requieren_accion_var = tk.StringVar(value="0")
+    #     self.jefes_afectados_var = tk.StringVar(value="0")
 
-        # Crear métricas
-        self._crear_metrica(metrics_row, "Total Alertas", self.total_alertas_var, '#3498db')
-        self._crear_metrica(metrics_row, "Jefes por Notificar", self.jefes_afectados_var, '#9b59b6')
+    #     # Crear métricas
+    #     self._crear_metrica(metrics_row, "Total Alertas", self.total_alertas_var, '#3498db')
+    #     self._crear_metrica(metrics_row, "Jefes por Notificar", self.jefes_afectados_var, '#9b59b6')
 
-    def _crear_metrica(self, parent, titulo, variable, color):
-        """Crea una métrica individual"""
-        metric_frame = tk.Frame(parent, bg=color, relief='raised', bd=2)
-        metric_frame.pack(side='left', fill='both', expand=True, padx=5, pady=5)
+    # def _crear_metrica(self, parent, titulo, variable, color):
+    #     """Crea una métrica individual"""
+    #     metric_frame = tk.Frame(parent, bg=color, relief='raised', bd=2)
+    #     metric_frame.pack(side='left', fill='both', expand=True, padx=5, pady=5)
 
-        tk.Label(metric_frame, text=titulo, font=('Arial', 10, 'bold'), 
-                fg='white', bg=color).pack(pady=(10, 5))
+    #     tk.Label(metric_frame, text=titulo, font=('Arial', 10, 'bold'), 
+    #             fg='white', bg=color).pack(pady=(10, 5))
         
-        tk.Label(metric_frame, textvariable=variable, font=('Arial', 18, 'bold'), 
-                fg='white', bg=color).pack(pady=(0, 10))
+    #     tk.Label(metric_frame, textvariable=variable, font=('Arial', 18, 'bold'), 
+    #             fg='white', bg=color).pack(pady=(0, 10))
 
-    def crear_seccion_tabla(self, parent):
-        """Crea la sección de tabla de alertas"""
-        tabla_frame = tk.LabelFrame(parent, text="Alertas", 
-                                   font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50', 
-                                   padx=10, pady=10)
-        tabla_frame.pack(fill='both', expand=True, pady=(0, 10))
+    # def crear_seccion_tabla(self, parent):
+    #     """Crea la sección de tabla de alertas"""
+    #     tabla_frame = tk.LabelFrame(parent, text="Alertas", 
+    #                                font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50', 
+    #                                padx=10, pady=10)
+    #     tabla_frame.pack(fill='both', expand=True, pady=(0, 10))
 
-        # Frame para filtros
-        filtros_frame = tk.Frame(tabla_frame, bg='#f0f0f0')
-        filtros_frame.pack(fill='x', pady=(0, 10))
+    #     # Frame para filtros
+    #     filtros_frame = tk.Frame(tabla_frame, bg='#f0f0f0')
+    #     filtros_frame.pack(fill='x', pady=(0, 10))
 
-        tk.Label(filtros_frame, text="Filtrar por:", font=('Arial', 10), bg='#f0f0f0').pack(side='left', padx=5)
+    #     tk.Label(filtros_frame, text="Filtrar por:", font=('Arial', 10), bg='#f0f0f0').pack(side='left', padx=5)
         
-        self.filtro_var = tk.StringVar(value="Todos")
-        filtro_combo = ttk.Combobox(filtros_frame, textvariable=self.filtro_var, 
-                                   values=["Todos", "SEGUNDO_PLAZO", "INDEFINIDO"],
-                                   state="readonly", width=15)
-        filtro_combo.pack(side='left', padx=5)
-        filtro_combo.bind('<<ComboboxSelected>>', self.aplicar_filtro)
+    #     self.filtro_var = tk.StringVar(value="Todos")
+    #     filtro_combo = ttk.Combobox(filtros_frame, textvariable=self.filtro_var, 
+    #                                values=["Todos", "SEGUNDO_PLAZO", "INDEFINIDO"],
+    #                                state="readonly", width=15)
+    #     filtro_combo.pack(side='left', padx=5)
+    #     filtro_combo.bind('<<ComboboxSelected>>', self.aplicar_filtro)
 
-        tk.Button(filtros_frame, text="Actualizar", command=self.cargar_alertas,
-                 bg='#27ae60', fg='white', font=('Arial', 9, 'bold'), 
-                 relief='flat', padx=10, pady=5).pack(side='right', padx=5)
+    #     tk.Button(filtros_frame, text="Actualizar", command=self.cargar_alertas,
+    #              bg='#27ae60', fg='white', font=('Arial', 9, 'bold'), 
+    #              relief='flat', padx=10, pady=5).pack(side='right', padx=5)
 
-        # Crear Treeview
-        self._crear_treeview_alertas(tabla_frame)
+    #     # Crear Treeview
+    #     self._crear_treeview_alertas(tabla_frame)
 
-    def _crear_treeview_alertas(self, parent):
-        """Crea el treeview para mostrar alertas con selección múltiple habilitada"""
-        # Frame para treeview y scrollbar
-        tree_frame = tk.Frame(parent, bg='#f0f0f0')
-        tree_frame.pack(fill='both', expand=True)
+    # def _crear_treeview_alertas(self, parent):
+    #     """Crea el treeview para mostrar alertas con selección múltiple habilitada"""
+    #     # Frame para treeview y scrollbar
+    #     tree_frame = tk.Frame(parent, bg='#f0f0f0')
+    #     tree_frame.pack(fill='both', expand=True)
 
-        # Columnas
-        columns = ('Empleado', 'Cargo', 'Jefe', 'Fecha inicio', 'Motivo')
+    #     # Columnas
+    #     columns = ('Empleado', 'Cargo', 'Jefe', 'Fecha inicio', 'Motivo')
         
-        self.alertas_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', 
-                                        height=15, selectmode='extended')
+    #     self.alertas_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', 
+    #                                     height=15, selectmode='extended')
         
-        # Configurar columnas
-        anchos = [200, 150, 200, 120, 150]
-        for i, col in enumerate(columns):
-            self.alertas_tree.heading(col, text=col)
-            self.alertas_tree.column(col, width=anchos[i], anchor='w')
+    #     # Configurar columnas
+    #     anchos = [200, 150, 200, 120, 150]
+    #     for i, col in enumerate(columns):
+    #         self.alertas_tree.heading(col, text=col)
+    #         self.alertas_tree.column(col, width=anchos[i], anchor='w')
 
-        # Scrollbars
-        scrollbar_v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.alertas_tree.yview)
-        self.alertas_tree.configure(yscrollcommand=scrollbar_v.set)
+    #     # Scrollbars
+    #     scrollbar_v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.alertas_tree.yview)
+    #     self.alertas_tree.configure(yscrollcommand=scrollbar_v.set)
 
-        # Pack
-        self.alertas_tree.pack(side='left', fill='both', expand=True)
-        scrollbar_v.pack(side='right', fill='y')
+    #     # Pack
+    #     self.alertas_tree.pack(side='left', fill='both', expand=True)
+    #     scrollbar_v.pack(side='right', fill='y')
         
-        # NUEVO: Agregar instrucciones para el usuario
-        info_frame = tk.Frame(parent, bg='#f0f0f0')
-        info_frame.pack(fill='x', pady=(5, 0))
+    #     # NUEVO: Agregar instrucciones para el usuario
+    #     info_frame = tk.Frame(parent, bg='#f0f0f0')
+    #     info_frame.pack(fill='x', pady=(5, 0))
         
-        info_label = tk.Label(info_frame, 
-                            text="Mantenga Ctrl presionado para seleccionar múltiples personas, o Shift para seleccionar un rango de personas",
-                            font=('Arial', 9, 'italic'), bg='#f0f0f0', fg='#7f8c8d')
-        info_label.pack(anchor='w')
+    #     info_label = tk.Label(info_frame, 
+    #                         text="Mantenga Ctrl presionado para seleccionar múltiples personas, o Shift para seleccionar un rango de personas",
+    #                         font=('Arial', 9, 'italic'), bg='#f0f0f0', fg='#7f8c8d')
+    #     info_label.pack(anchor='w')
 
     
-    def crear_seccion_acciones(self, parent):
-        """Crea la sección de acciones"""
-        acciones_frame = tk.LabelFrame(parent, text="🚀 Acciones", 
-                                    font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50', 
-                                    padx=15, pady=15)
-        acciones_frame.pack(fill='x')
+    # def crear_seccion_acciones(self, parent):
+    #     """Crea la sección de acciones"""
+    #     acciones_frame = tk.LabelFrame(parent, text="🚀 Acciones", 
+    #                                 font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50', 
+    #                                 padx=15, pady=15)
+    #     acciones_frame.pack(fill='x')
 
-        # Frame para botones - Primera fila
-        btn_frame1 = tk.Frame(acciones_frame, bg='#f0f0f0')
-        btn_frame1.pack(pady=(0, 5))
+    #     # Frame para botones - Primera fila
+    #     btn_frame1 = tk.Frame(acciones_frame, bg='#f0f0f0')
+    #     btn_frame1.pack(pady=(0, 5))
 
-        tk.Button(btn_frame1, text="Enviar Alertas Seleccionadas", 
-                command=self.enviar_a_jefes_seleccionadas,
-                bg='#e74c3c', fg='white', font=('Arial', 11, 'bold'), 
-                relief='flat', padx=20, pady=10).pack(side='left', padx=5)
+    #     tk.Button(btn_frame1, text="Enviar Alertas Seleccionadas", 
+    #             command=self.enviar_a_jefes_seleccionadas,
+    #             bg='#e74c3c', fg='white', font=('Arial', 11, 'bold'), 
+    #             relief='flat', padx=20, pady=10).pack(side='left', padx=5)
 
-        tk.Button(btn_frame1, text="Enviar Todas las Alertas", 
-                command=self.enviar_a_todos_los_jefes,
-                bg='#c0392b', fg='white', font=('Arial', 11, 'bold'), 
-                relief='flat', padx=20, pady=10).pack(side='left', padx=5)
+    #     tk.Button(btn_frame1, text="Enviar Todas las Alertas", 
+    #             command=self.enviar_a_todos_los_jefes,
+    #             bg='#c0392b', fg='white', font=('Arial', 11, 'bold'), 
+    #             relief='flat', padx=20, pady=10).pack(side='left', padx=5)
 
-        # Frame para botones - Segunda fila (reportes de prueba)
-        btn_frame2 = tk.Frame(acciones_frame, bg='#f0f0f0')
-        btn_frame2.pack(pady=(5, 0))
+    #     # Frame para botones - Segunda fila (reportes de prueba)
+    #     btn_frame2 = tk.Frame(acciones_frame, bg='#f0f0f0')
+    #     btn_frame2.pack(pady=(5, 0))
 
-        tk.Button(btn_frame2, text="Reporte Test (Seleccionadas)", 
-                command=self.enviar_alertas_seleccionadas,
-                bg='#95a5a6', fg='white', font=('Arial', 10), 
-                relief='flat', padx=15, pady=8).pack(side='left', padx=5)
+    #     tk.Button(btn_frame2, text="Reporte Test (Seleccionadas)", 
+    #             command=self.enviar_alertas_seleccionadas,
+    #             bg='#95a5a6', fg='white', font=('Arial', 10), 
+    #             relief='flat', padx=15, pady=8).pack(side='left', padx=5)
 
-        tk.Button(btn_frame2, text="Resumen por Jefe", 
-                command=self.mostrar_resumen_jefes,
-                bg='#9b59b6', fg='white', font=('Arial', 10), 
-                relief='flat', padx=15, pady=8).pack(side='left', padx=5)
+    #     tk.Button(btn_frame2, text="Resumen por Jefe", 
+    #             command=self.mostrar_resumen_jefes,
+    #             bg='#9b59b6', fg='white', font=('Arial', 10), 
+    #             relief='flat', padx=15, pady=8).pack(side='left', padx=5)
 
-        tk.Button(btn_frame2, text="Marcar como Procesada", 
-                command=self.marcar_procesada,
-                bg='#27ae60', fg='white', font=('Arial', 10), 
-                relief='flat', padx=15, pady=8).pack(side='left', padx=5)
+    #     tk.Button(btn_frame2, text="Marcar como Procesada", 
+    #             command=self.marcar_procesada,
+    #             bg='#27ae60', fg='white', font=('Arial', 10), 
+    #             relief='flat', padx=15, pady=8).pack(side='left', padx=5)
     
     def enviar_a_jefes_seleccionadas(self):
         """Envía alertas seleccionadas a los jefes correspondientes"""
@@ -621,292 +621,292 @@ class DashboardAlertas:
             messagebox.showerror("Error", f"Error enviando correo:\n{e}")
 
 
-    def cargar_alertas(self):
-        """Carga las alertas y actualiza la interfaz"""
-        self.alertas_df = self.obtener_alertas()
+    # def cargar_alertas(self):
+    #     """Carga las alertas y actualiza la interfaz"""
+    #     self.alertas_df = self.obtener_alertas()
         
-        # DEBUG: Para verificar las columnas (comentar después de corregir)
-        if not self.alertas_df.empty:
-            print("\n=== DEBUG INFO ===")
-            print("Columnas disponibles:")
-            for i, col in enumerate(self.alertas_df.columns):
-                print(f"  {i}: '{col}'")
-            print(f"\nTotal filas: {len(self.alertas_df)}")
-            print("Muestra de datos:")
-            print(self.alertas_df.head())
-            print("==================\n")
-        else:
-            print("DataFrame vacío - No hay alertas o error en consulta")
+    #     # DEBUG: Para verificar las columnas (comentar después de corregir)
+    #     if not self.alertas_df.empty:
+    #         print("\n=== DEBUG INFO ===")
+    #         print("Columnas disponibles:")
+    #         for i, col in enumerate(self.alertas_df.columns):
+    #             print(f"  {i}: '{col}'")
+    #         print(f"\nTotal filas: {len(self.alertas_df)}")
+    #         print("Muestra de datos:")
+    #         print(self.alertas_df.head())
+    #         print("==================\n")
+    #     else:
+    #         print("DataFrame vacío - No hay alertas o error en consulta")
         
-        self.actualizar_metricas()
-        self.actualizar_tabla()
+    #     self.actualizar_metricas()
+    #     self.actualizar_tabla()
 
-        self.alertas_df = self.obtener_alertas()
-        self.incidencias_df = self.obtener_incidencias()
+    #     self.alertas_df = self.obtener_alertas()
+    #     self.incidencias_df = self.obtener_incidencias()
 
-    def actualizar_metricas(self):
-        """Actualiza las métricas en la interfaz"""
-        if self.alertas_df.empty:
-            self.total_alertas_var.set("0")
-            self.urgentes_var.set("0")
-            self.requieren_accion_var.set("0")
-            self.jefes_afectados_var.set("0")
-        else:
-            self.total_alertas_var.set(str(len(self.alertas_df)))
-            self.urgentes_var.set(str((self.alertas_df["Urgente"] == 1).sum()))
-            self.requieren_accion_var.set(str((self.alertas_df["Requiere Acción"] == 1).sum()))
-            self.jefes_afectados_var.set(str(self.alertas_df["Jefe"].nunique()))
+    # def actualizar_metricas(self):
+    #     """Actualiza las métricas en la interfaz"""
+    #     if self.alertas_df.empty:
+    #         self.total_alertas_var.set("0")
+    #         self.urgentes_var.set("0")
+    #         self.requieren_accion_var.set("0")
+    #         self.jefes_afectados_var.set("0")
+    #     else:
+    #         self.total_alertas_var.set(str(len(self.alertas_df)))
+    #         self.urgentes_var.set(str((self.alertas_df["Urgente"] == 1).sum()))
+    #         self.requieren_accion_var.set(str((self.alertas_df["Requiere Acción"] == 1).sum()))
+    #         self.jefes_afectados_var.set(str(self.alertas_df["Jefe"].nunique()))
 
-    def actualizar_tabla(self):
-        """Actualiza la tabla de alertas"""
-        # Limpiar tabla
-        for item in self.alertas_tree.get_children():
-            self.alertas_tree.delete(item)
+    # def actualizar_tabla(self):
+    #     """Actualiza la tabla de alertas"""
+    #     # Limpiar tabla
+    #     for item in self.alertas_tree.get_children():
+    #         self.alertas_tree.delete(item)
 
-        if self.alertas_df.empty:
-            return
+    #     if self.alertas_df.empty:
+    #         return
 
-        # Aplicar filtro actual
-        df_filtrado = self.aplicar_filtro_actual()
+    #     # Aplicar filtro actual
+    #     df_filtrado = self.aplicar_filtro_actual()
 
-        # Llenar tabla
-        for _, row in df_filtrado.iterrows():
-            try:
-                valores = (
-                    row["Empleado"], 
-                    row["Cargo"], 
-                    row["Jefe"], 
-                    row["Fecha inicio"],
-                    row["Motivo"], 
-                )
-                item = self.alertas_tree.insert('', 'end', values=valores)
+    #     # Llenar tabla
+    #     for _, row in df_filtrado.iterrows():
+    #         try:
+    #             valores = (
+    #                 row["Empleado"], 
+    #                 row["Cargo"], 
+    #                 row["Jefe"], 
+    #                 row["Fecha inicio"],
+    #                 row["Motivo"], 
+    #             )
+    #             item = self.alertas_tree.insert('', 'end', values=valores)
                 
-            except KeyError as e:
-                print(f"Error accediendo a columna: {e}")
-                print(f"Columnas disponibles: {list(row.index)}")
-                break
-            except Exception as e:
-                print(f"Error general en fila: {e}")
-                continue
+    #         except KeyError as e:
+    #             print(f"Error accediendo a columna: {e}")
+    #             print(f"Columnas disponibles: {list(row.index)}")
+    #             break
+    #         except Exception as e:
+    #             print(f"Error general en fila: {e}")
+    #             continue
 
-    def aplicar_filtro_actual(self):
-        """Aplica el filtro seleccionado"""
-        if self.alertas_df.empty:
-            return self.alertas_df
+    # def aplicar_filtro_actual(self):
+    #     """Aplica el filtro seleccionado"""
+    #     if self.alertas_df.empty:
+    #         return self.alertas_df
 
-        filtro = self.filtro_var.get()
+    #     filtro = self.filtro_var.get()
         
-        if filtro == "Todos":
-            return self.alertas_df
-        elif filtro in ["SEGUNDO_PLAZO", "INDEFINIDO"]:
-            return self.alertas_df[self.alertas_df["Tipo Alerta"] == filtro]
-        else:
-            return self.alertas_df
+    #     if filtro == "Todos":
+    #         return self.alertas_df
+    #     elif filtro in ["SEGUNDO_PLAZO", "INDEFINIDO"]:
+    #         return self.alertas_df[self.alertas_df["Tipo Alerta"] == filtro]
+    #     else:
+    #         return self.alertas_df
 
-    def aplicar_filtro(self, event=None):
-        """Aplica filtro cuando cambia la selección"""
-        self.actualizar_tabla()
+    # def aplicar_filtro(self, event=None):
+    #     """Aplica filtro cuando cambia la selección"""
+    #     self.actualizar_tabla()
 
-    def _generar_html_para_jefe(self, jefe, email_jefe, alertas_jefe, modo_prueba=False):
-        """Genera HTML personalizado para cada jefe"""
-        modo_texto = "<div style='background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin-bottom: 20px; border-radius: 5px;'><strong>🧪 MODO PRUEBA:</strong> Este correo habría sido enviado a " + email_jefe + "</div>" if modo_prueba else ""
+    # def _generar_html_para_jefe(self, jefe, email_jefe, alertas_jefe, modo_prueba=False):
+    #     """Genera HTML personalizado para cada jefe"""
+    #     modo_texto = "<div style='background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin-bottom: 20px; border-radius: 5px;'><strong>🧪 MODO PRUEBA:</strong> Este correo habría sido enviado a " + email_jefe + "</div>" if modo_prueba else ""
         
-        html = f"""
-        <html>
-        <head>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; line-height: 1.5; }}
-                h2 {{ color: #e74c3c; }}
-                .jefe-header {{ background-color: #3498db; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; }}
-                .alerta-container {{ border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; }}
-                .alerta-header {{ font-weight: bold; font-size: 1.2em; color: #2c3e50; margin-bottom: 10px; }}
-                .urgente {{ background-color: #fce4e4; border-left: 5px solid #e74c3c; }}
-                .vencida {{ background-color: #ffcdd2; border-left: 5px solid #c62828; }}
-                table {{ border-collapse: collapse; width: 100%; margin-top: 10px; }}
-                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-                th {{ background-color: #34495e; color: white; }}
-                .resumen {{ background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin-bottom: 20px; }}
-                .footer {{ background-color: #f8f9fa; padding: 15px; margin-top: 30px; border-radius: 5px; font-size: 0.9em; }}
-            </style>
-        </head>
-        <body>
-            {modo_texto}
+    #     html = f"""
+    #     <html>
+    #     <head>
+    #         <style>
+    #             body {{ font-family: Arial, sans-serif; margin: 20px; line-height: 1.5; }}
+    #             h2 {{ color: #e74c3c; }}
+    #             .jefe-header {{ background-color: #3498db; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; }}
+    #             .alerta-container {{ border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; }}
+    #             .alerta-header {{ font-weight: bold; font-size: 1.2em; color: #2c3e50; margin-bottom: 10px; }}
+    #             .urgente {{ background-color: #fce4e4; border-left: 5px solid #e74c3c; }}
+    #             .vencida {{ background-color: #ffcdd2; border-left: 5px solid #c62828; }}
+    #             table {{ border-collapse: collapse; width: 100%; margin-top: 10px; }}
+    #             th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+    #             th {{ background-color: #34495e; color: white; }}
+    #             .resumen {{ background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin-bottom: 20px; }}
+    #             .footer {{ background-color: #f8f9fa; padding: 15px; margin-top: 30px; border-radius: 5px; font-size: 0.9em; }}
+    #         </style>
+    #     </head>
+    #     <body>
+    #         {modo_texto}
             
-            <div class="jefe-header">
-                <h2>📋 Alertas de Contratos - {jefe}</h2>
-                <p>Alertas pendientes para miembros de su equipo</p>
-            </div>
+    #         <div class="jefe-header">
+    #             <h2>📋 Alertas de Contratos - {jefe}</h2>
+    #             <p>Alertas pendientes para miembros de su equipo</p>
+    #         </div>
             
-            <div class="resumen">
-                <h3>📊 Resumen</h3>
-                <p><strong>Total de alertas:</strong> {len(alertas_jefe)}</p>
-                <p><strong>Colaboradores afectados:</strong> {', '.join(alertas_jefe['Empleado'].tolist())}</p>
-                <p><strong>Fecha de generación:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
-            </div>
+    #         <div class="resumen">
+    #             <h3>📊 Resumen</h3>
+    #             <p><strong>Total de alertas:</strong> {len(alertas_jefe)}</p>
+    #             <p><strong>Colaboradores afectados:</strong> {', '.join(alertas_jefe['Empleado'].tolist())}</p>
+    #             <p><strong>Fecha de generación:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+    #         </div>
 
-            <p>Estimado/a <strong>{jefe}</strong>,</p>
-            <p>Junto con saludar, le informamos que tiene <strong>{len(alertas_jefe)} alerta(s)</strong> de contratos pendientes de revisión en su equipo:</p>
-        """
+    #         <p>Estimado/a <strong>{jefe}</strong>,</p>
+    #         <p>Junto con saludar, le informamos que tiene <strong>{len(alertas_jefe)} alerta(s)</strong> de contratos pendientes de revisión en su equipo:</p>
+    #     """
 
-        # Agregar cada alerta del jefe
-        for _, row in alertas_jefe.iterrows():
-            dias_hasta = row["Días hasta alerta"]
-            clase_css = "vencida" if dias_hasta <= 0 else "urgente" if row["Urgente"] == 1 else ""
+    #     # Agregar cada alerta del jefe
+    #     for _, row in alertas_jefe.iterrows():
+    #         dias_hasta = row["Días hasta alerta"]
+    #         clase_css = "vencida" if dias_hasta <= 0 else "urgente" if row["Urgente"] == 1 else ""
             
-            # Filtrar permisos para el empleado actual
-            incidencias_empleado = self.incidencias_df[self.incidencias_df['rut_empleado'] == row['RUT']]
+    #         # Filtrar permisos para el empleado actual
+    #         incidencias_empleado = self.incidencias_df[self.incidencias_df['rut_empleado'] == row['RUT']]
             
-            html += f"""
-            <div class="alerta-container {clase_css}">
-                <div class="alerta-header">👤 {row['Empleado']} - {row['Cargo']}</div>
-                <p><strong>Motivo:</strong> {row['Motivo']}</p>
-                <p><strong>Fecha de Renovación:</strong> {row['Fecha alerta']}</p>
-                <p><strong>Días hasta la fecha:</strong> {dias_hasta} días</p>
-            """
+    #         html += f"""
+    #         <div class="alerta-container {clase_css}">
+    #             <div class="alerta-header">👤 {row['Empleado']} - {row['Cargo']}</div>
+    #             <p><strong>Motivo:</strong> {row['Motivo']}</p>
+    #             <p><strong>Fecha de Renovación:</strong> {row['Fecha alerta']}</p>
+    #             <p><strong>Días hasta la fecha:</strong> {dias_hasta} días</p>
+    #         """
             
-            # Tabla de permisos
-            if not incidencias_empleado.empty:
-                html += """
-                <h4>📅 Permisos/Licencias Activas:</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Tipo de Permiso</th>
-                            <th>Fecha de Inicio</th>
-                            <th>Fecha de Fin</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                """
-                for _, inc_row in incidencias_empleado.iterrows():
-                    html += f"""
-                        <tr>
-                            <td>{inc_row['tipo_permiso']}</td>
-                            <td>{inc_row['fecha_inicio']}</td>
-                            <td>{inc_row['fecha_fin']}</td>
-                        </tr>
-                    """
-                html += """
-                    </tbody>
-                </table>
-                """
-            else:
-                html += "<p>Este colaborador/a no registra ausencias, permisos y/o licencias activas.</p>"
+    #         # Tabla de permisos
+    #         if not incidencias_empleado.empty:
+    #             html += """
+    #             <h4>📅 Permisos/Licencias Activas:</h4>
+    #             <table>
+    #                 <thead>
+    #                     <tr>
+    #                         <th>Tipo de Permiso</th>
+    #                         <th>Fecha de Inicio</th>
+    #                         <th>Fecha de Fin</th>
+    #                     </tr>
+    #                 </thead>
+    #                 <tbody>
+    #             """
+    #             for _, inc_row in incidencias_empleado.iterrows():
+    #                 html += f"""
+    #                     <tr>
+    #                         <td>{inc_row['tipo_permiso']}</td>
+    #                         <td>{inc_row['fecha_inicio']}</td>
+    #                         <td>{inc_row['fecha_fin']}</td>
+    #                     </tr>
+    #                 """
+    #             html += """
+    #                 </tbody>
+    #             </table>
+    #             """
+    #         else:
+    #             html += "<p>Este colaborador/a no registra ausencias, permisos y/o licencias activas.</p>"
                 
-            html += """
-            </div>
-            """
+    #         html += """
+    #         </div>
+    #         """
 
-        html += f"""
-            <div class="footer">
-                <h4>📞 ¿Necesita ayuda?</h4>
-                <p>Si tiene consultas sobre estas alertas o necesita apoyo para la renovación de contratos, 
-                no dude en contactar al área de Recursos Humanos.</p>
+    #     html += f"""
+    #         <div class="footer">
+    #             <h4>📞 ¿Necesita ayuda?</h4>
+    #             <p>Si tiene consultas sobre estas alertas o necesita apoyo para la renovación de contratos, 
+    #             no dude en contactar al área de Recursos Humanos.</p>
                 
-                <p><strong>Equipo de Recursos Humanos</strong><br>
-                📧 Email: {mail_test_gabriel}<br>
-                📅 Sistema de Alertas de Contratos</p>
+    #             <p><strong>Equipo de Recursos Humanos</strong><br>
+    #             📧 Email: {mail_test_gabriel}<br>
+    #             📅 Sistema de Alertas de Contratos</p>
                 
-                <hr style="margin: 20px 0;">
-                <p style="font-size: 0.8em; color: #666;">
-                    <em>Este correo fue generado automáticamente por el Sistema de Alertas de Contratos de RRHH. 
-                    Para consultas técnicas, contacte al administrador del sistema.</em>
-                </p>
-            </div>
-        </body>
-        </html>
-        """
-        return html
+    #             <hr style="margin: 20px 0;">
+    #             <p style="font-size: 0.8em; color: #666;">
+    #                 <em>Este correo fue generado automáticamente por el Sistema de Alertas de Contratos de RRHH. 
+    #                 Para consultas técnicas, contacte al administrador del sistema.</em>
+    #             </p>
+    #         </div>
+    #     </body>
+    #     </html>
+    #     """
+    #     return html
 
-    def _generar_html_reporte_seleccionadas(self, alertas_seleccionadas):
-        """Genera el HTML del reporte solo para las alertas seleccionadas"""
-        html = f"""
-        <html>
-        <head>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                h2 {{ color: #e74c3c; }}
-                .alerta-container {{ border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; }}
-                .alerta-header {{ font-weight: bold; font-size: 1.2em; color: #2c3e50; }}
-                .urgente {{ background-color: #fce4e4; }}
-                .vencida {{ background-color: #ffcdd2; }}
-                .seleccionada {{ background-color: #e8f5e8; border-color: #27ae60; }}
-                table {{ border-collapse: collapse; width: 100%; margin-top: 10px; }}
-                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-                th {{ background-color: #34495e; color: white; }}
-            </style>
-        </head>
-        <body>
+    # def _generar_html_reporte_seleccionadas(self, alertas_seleccionadas):
+    #     """Genera el HTML del reporte solo para las alertas seleccionadas"""
+    #     html = f"""
+    #     <html>
+    #     <head>
+    #         <style>
+    #             body {{ font-family: Arial, sans-serif; margin: 20px; }}
+    #             h2 {{ color: #e74c3c; }}
+    #             .alerta-container {{ border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; }}
+    #             .alerta-header {{ font-weight: bold; font-size: 1.2em; color: #2c3e50; }}
+    #             .urgente {{ background-color: #fce4e4; }}
+    #             .vencida {{ background-color: #ffcdd2; }}
+    #             .seleccionada {{ background-color: #e8f5e8; border-color: #27ae60; }}
+    #             table {{ border-collapse: collapse; width: 100%; margin-top: 10px; }}
+    #             th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+    #             th {{ background-color: #34495e; color: white; }}
+    #         </style>
+    #     </head>
+    #     <body>
     
-            <p>Estimado/a, junto con saludar</p>
-            <p>Se adjunta el listado de colaboradores con contratos pendientes de revisión:</p>
+    #         <p>Estimado/a, junto con saludar</p>
+    #         <p>Se adjunta el listado de colaboradores con contratos pendientes de revisión:</p>
 
-            <div class="resumen">
-                <h3>Reporte Vencimiento de Contrato</h3>
-            </div>
+    #         <div class="resumen">
+    #             <h3>Reporte Vencimiento de Contrato</h3>
+    #         </div>
         
-        """
+    #     """
 
-        # Bucle para crear una sección por cada alerta seleccionada
-        for _, row in alertas_seleccionadas.iterrows():
-            dias_hasta = row["Días hasta alerta"]
-            clase_css = "vencida" if dias_hasta <= 0 else "urgente" if row["Urgente"] == 1 else ""
-            clase_css += " seleccionada"  # Agregar clase para destacar que fue seleccionada
+    #     # Bucle para crear una sección por cada alerta seleccionada
+    #     for _, row in alertas_seleccionadas.iterrows():
+    #         dias_hasta = row["Días hasta alerta"]
+    #         clase_css = "vencida" if dias_hasta <= 0 else "urgente" if row["Urgente"] == 1 else ""
+    #         clase_css += " seleccionada"  # Agregar clase para destacar que fue seleccionada
             
-            # Filtrar permisos para el empleado actual
-            incidencias_empleado = self.incidencias_df[self.incidencias_df['rut_empleado'] == row['RUT']]
+    #         # Filtrar permisos para el empleado actual
+    #         incidencias_empleado = self.incidencias_df[self.incidencias_df['rut_empleado'] == row['RUT']]
             
-            # HTML para la alerta del empleado
-            html += f"""
-            <div class="alerta-container {clase_css}">
-                <div class="alerta-header">Termino Contrato: {row['Empleado']}</div>
-                <p><strong>Cargo:</strong> {row['Cargo']}</p>
-                <p><strong>Motivo:</strong> {row['Motivo']}</p>
-                <p><strong>Jefe Directo:</strong> {row['Jefe']} </p>
-                <p><strong>Fecha de Renovación:</strong> {row['Fecha alerta']}</p>
-            """
+    #         # HTML para la alerta del empleado
+    #         html += f"""
+    #         <div class="alerta-container {clase_css}">
+    #             <div class="alerta-header">Termino Contrato: {row['Empleado']}</div>
+    #             <p><strong>Cargo:</strong> {row['Cargo']}</p>
+    #             <p><strong>Motivo:</strong> {row['Motivo']}</p>
+    #             <p><strong>Jefe Directo:</strong> {row['Jefe']} </p>
+    #             <p><strong>Fecha de Renovación:</strong> {row['Fecha alerta']}</p>
+    #         """
             
-            # HTML para la tabla de permisos
-            if not incidencias_empleado.empty:
-                html += """
-                <h4>Permisos Activos:</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Tipo de Permiso</th>
-                            <th>Fecha de Inicio</th>
-                            <th>Fecha de Fin</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                """
-                for _, inc_row in incidencias_empleado.iterrows():
-                    html += f"""
-                        <tr>
-                            <td>{inc_row['tipo_permiso']}</td>
-                            <td>{inc_row['fecha_inicio']}</td>
-                            <td>{inc_row['fecha_fin']}</td>
-                        </tr>
-                    """
-                html += """
-                    </tbody>
-                </table>
-                """
-            else:
-                html += "<p>Este colaborador/a no registra ausencias, permisos y/o licencias.</p>"
+    #         # HTML para la tabla de permisos
+    #         if not incidencias_empleado.empty:
+    #             html += """
+    #             <h4>Permisos Activos:</h4>
+    #             <table>
+    #                 <thead>
+    #                     <tr>
+    #                         <th>Tipo de Permiso</th>
+    #                         <th>Fecha de Inicio</th>
+    #                         <th>Fecha de Fin</th>
+    #                     </tr>
+    #                 </thead>
+    #                 <tbody>
+    #             """
+    #             for _, inc_row in incidencias_empleado.iterrows():
+    #                 html += f"""
+    #                     <tr>
+    #                         <td>{inc_row['tipo_permiso']}</td>
+    #                         <td>{inc_row['fecha_inicio']}</td>
+    #                         <td>{inc_row['fecha_fin']}</td>
+    #                     </tr>
+    #                 """
+    #             html += """
+    #                 </tbody>
+    #             </table>
+    #             """
+    #         else:
+    #             html += "<p>Este colaborador/a no registra ausencias, permisos y/o licencias.</p>"
                 
-            html += """
-            </div>
-            """
+    #         html += """
+    #         </div>
+    #         """
 
-        html += f"""
-        <br>
+    #     html += f"""
+    #     <br>
 
-        <p><em><strong>Generado automáticamente por el Sistema de Alertas de Contratos de RRHH</strong></em></p>
-        </body>
-        </html>
-        """
-        return html
+    #     <p><em><strong>Generado automáticamente por el Sistema de Alertas de Contratos de RRHH</strong></em></p>
+    #     </body>
+    #     </html>
+    #     """
+    #     return html
     
 
     
@@ -914,62 +914,62 @@ class DashboardAlertas:
     #               Ventana de resumen por jefe
     #-----------------------------------------------------------
 
-    def mostrar_resumen_jefes(self):
-        """Muestra ventana con resumen por jefe"""
-        if self.alertas_df.empty:
-            messagebox.showinfo("Sin datos", "No hay alertas para mostrar resumen.")
-            return
+    # def mostrar_resumen_jefes(self):
+    #     """Muestra ventana con resumen por jefe"""
+    #     if self.alertas_df.empty:
+    #         messagebox.showinfo("Sin datos", "No hay alertas para mostrar resumen.")
+    #         return
 
-        # Crear ventana de resumen
-        resumen_win = tk.Toplevel(self.root)
-        resumen_win.title("Resumen por Jefe")
-        resumen_win.geometry("800x600+200+100")
-        resumen_win.configure(bg='#f0f0f0')
-        resumen_win.grab_set()
+    #     # Crear ventana de resumen
+    #     resumen_win = tk.Toplevel(self.root)
+    #     resumen_win.title("Resumen por Jefe")
+    #     resumen_win.geometry("800x600+200+100")
+    #     resumen_win.configure(bg='#f0f0f0')
+    #     resumen_win.grab_set()
 
-        # Título
-        tk.Label(resumen_win, text="Resumen de Alertas por Jefe", 
-                font=('Arial', 14, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(pady=15)
+    #     # Título
+    #     tk.Label(resumen_win, text="Resumen de Alertas por Jefe", 
+    #             font=('Arial', 14, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(pady=15)
 
-        # Crear treeview para resumen
-        columns = ('Jefe', 'Email', 'Empleados Afectados') #'Total Alertas', 'Urgentes',
-        resumen_tree = ttk.Treeview(resumen_win, columns=columns, show='headings', height=15)
+    #     # Crear treeview para resumen
+    #     columns = ('Jefe', 'Email', 'Empleados Afectados') #'Total Alertas', 'Urgentes',
+    #     resumen_tree = ttk.Treeview(resumen_win, columns=columns, show='headings', height=15)
         
-        for col in columns:
-            resumen_tree.heading(col, text=col)
-            resumen_tree.column(col, width=150, anchor='w')
+    #     for col in columns:
+    #         resumen_tree.heading(col, text=col)
+    #         resumen_tree.column(col, width=150, anchor='w')
 
-        # Calcular resumen por jefe
-        resumen_jefes = self.alertas_df.groupby(['Jefe', 'Email Jefe']).agg({
-            # 'ID': 'count',
-            #'Urgente': 'sum',
-            'Empleado': 'nunique'
-        }).reset_index()
+    #     # Calcular resumen por jefe
+    #     resumen_jefes = self.alertas_df.groupby(['Jefe', 'Email Jefe']).agg({
+    #         # 'ID': 'count',
+    #         #'Urgente': 'sum',
+    #         'Empleado': 'nunique'
+    #     }).reset_index()
 
-        # Llenar treeview
-        for _, row in resumen_jefes.iterrows():
-            resumen_tree.insert('', 'end', values=(
-                row['Jefe'], row['Email Jefe'], row['Empleado']
-            )) #row['ID'], row['Urgente'],
+    #     # Llenar treeview
+    #     for _, row in resumen_jefes.iterrows():
+    #         resumen_tree.insert('', 'end', values=(
+    #             row['Jefe'], row['Email Jefe'], row['Empleado']
+    #         )) #row['ID'], row['Urgente'],
 
-        resumen_tree.pack(fill='both', expand=True, padx=20, pady=10)
+    #     resumen_tree.pack(fill='both', expand=True, padx=20, pady=10)
 
-        # Botón cerrar
-        tk.Button(resumen_win, text="Cerrar", command=resumen_win.destroy,
-                 bg='#FF6961', fg='white', font=('Arial', 11, 'bold'),
-                 relief='flat', padx=20, pady=10).pack(pady=15)
+    #     # Botón cerrar
+    #     tk.Button(resumen_win, text="Cerrar", command=resumen_win.destroy,
+    #              bg='#FF6961', fg='white', font=('Arial', 11, 'bold'),
+    #              relief='flat', padx=20, pady=10).pack(pady=15)
 
-    def marcar_procesada(self):
-        """Marca la alerta seleccionada como procesada"""
-        seleccion = self.alertas_tree.selection()
-        if not seleccion:
-            messagebox.showwarning("Advertencia", "Seleccione una alerta para marcar como procesada.")
-            return
+    # def marcar_procesada(self):
+    #     """Marca la alerta seleccionada como procesada"""
+    #     seleccion = self.alertas_tree.selection()
+    #     if not seleccion:
+    #         messagebox.showwarning("Advertencia", "Seleccione una alerta para marcar como procesada.")
+    #         return
 
-        if messagebox.askyesno("Confirmar", "¿Marcar la alerta seleccionada como procesada?"):
-            # Aquí implementarías la lógica para marcar en BD
-            messagebox.showinfo("✅ Procesada", "Alerta marcada como procesada.")
-            self.cargar_alertas()  # Recargar datos
+    #     if messagebox.askyesno("Confirmar", "¿Marcar la alerta seleccionada como procesada?"):
+    #         # Aquí implementarías la lógica para marcar en BD
+    #         messagebox.showinfo("✅ Procesada", "Alerta marcada como procesada.")
+    #         self.cargar_alertas()  # Recargar datos
 
 #-----------------------------------------------------------
 #                    Función Principal
