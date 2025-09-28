@@ -14,7 +14,6 @@ class ConfigUI:
         """Inicializa la ventana principal"""
         # Inicializar callbacks como None
         self.enviar_selecionada_callback = None
-        self.actualizar_callback = None
         self.enviar_seleccionadas_por_jefe_callback = None
         
         # Inicializar dataframes vacíos
@@ -105,18 +104,11 @@ class ConfigUI:
                 bg='#9b59b6', fg='white', font=('Arial', 10), 
                 relief='flat', padx=17, pady=10).pack(side='left', padx=5)
         
-         # botón actualizar
-        tk.Button(filtros_frame, text="Actualizar", 
-                command=self._actualizar,
-                bg='#54e367', fg='white', font=('Arial', 9, 'bold'), 
-                relief='flat', padx=17, pady=10).pack(side='right', padx=5)
-
         # Crear Treeview
         self._crear_tabla(tabla_frame)
     
     def _crear_tabla(self, parent):
         """Crea el treeview para mostrar alertas"""
-        # Frame para treeview y scrollbar
         tabla_frame = tk.Frame(parent, bg='#f0f0f0')
         tabla_frame.pack(fill='both', expand=True)
 
@@ -130,7 +122,7 @@ class ConfigUI:
         anchos = [200, 150, 200, 120, 50, 150]
         for i, col in enumerate(columns):
             self.alertas_tree.heading(col, text=col)
-            self.alertas_tree.column(col, width=anchos[i], anchor='w')
+            self.alertas_tree.column(col, width=anchos[i], anchor='center')
 
         # Scrollbars
         scrollbar_v = ttk.Scrollbar(tabla_frame, orient='vertical', command=self.alertas_tree.yview)
@@ -149,11 +141,6 @@ class ConfigUI:
         """Llama al callback para enviar alertas seleccionadas"""
         if self.enviar_seleccionadas_por_jefe_callback:
             self.enviar_seleccionadas_por_jefe_callback()
-    
-    def _actualizar(self):
-        """Llama al callback para actualizar datos"""
-        if self.actualizar_callback:
-            self.actualizar_callback()
 
     def actualizar_metricas(self):
         """Actualiza las métricas en la interfaz"""
@@ -215,6 +202,7 @@ class ConfigUI:
         """Aplica filtro cuando cambia la selección"""
         self.actualizar_tabla()
         
+    
     def _mostrar_resumen_jefes(self):
         """Muestra ventana con resumen por jefe"""
         if self.alertas_df.empty:
@@ -253,14 +241,42 @@ class ConfigUI:
 
         resumen_tree.pack(fill='both', expand=True, padx=20, pady=10)
 
+        def _obtener_y_enviar_jefes_seleccionados():
+            """
+            Obtiene los jefes seleccionados del resumen_tree local,
+            y llama al callback de servicio con el filtro (jefes_filtro).
+            """
+            seleccionados_ids = resumen_tree.selection()
+            
+            if not seleccionados_ids:
+                messagebox.showwarning("Sin selección", "Por favor selecciona al menos un jefe para notificar.")
+                return
+            
+            jefes_a_filtrar = []
+            for item_id in seleccionados_ids:
+                # Los valores del Treeview son (Jefe, Email Jefe, Empleados Afectados)
+                valores = resumen_tree.item(item_id)['values']
+                jefe = valores[0]
+                email = valores[1]
+                # Creamos el diccionario para el filtro que espera services.py
+                jefes_a_filtrar.append({'Jefe': jefe, 'Email Jefe': email})
+                
+            # AQUI SE LLAMA AL CALLBACK Y SE PASA EL ARGUMENTO REQUERIDO
+            if self.enviar_seleccionadas_por_jefe_callback:
+                self.enviar_seleccionadas_por_jefe_callback(jefes_a_filtrar)
+                
+            # Cerrar la ventana después de la acción (opcional, pero buena práctica)
+            ventana_resumen.destroy()
+
+
         # Botón cerrar
         tk.Button(ventana_resumen, text="Cerrar", command=ventana_resumen.destroy,
                  bg='#FF6961', fg='white', font=('Arial', 11, 'bold'),
                  relief='flat', padx=20, pady=10).pack(side='left', pady=15, padx=5)
 
-        #boton envio masivo 
-        tk.Button(ventana_resumen, text="Enviar Alertas por Jefe", command=self._enviar_seleccionadas_por_jefe,
-                 bg='#FF6961', fg='white', font=('Arial', 11, 'bold'),
+        # boton envio masivo (LLAMA A LA FUNCIÓN INTERNA QUE PASA EL ARGUMENTO)
+        tk.Button(ventana_resumen, text="Enviar Alertas por Jefe", command=_obtener_y_enviar_jefes_seleccionados,
+                 bg='#4CAF50', fg='white', font=('Arial', 11, 'bold'),
                  relief='flat', padx=20, pady=10).pack(side='left', pady=15, padx=5)
 
     

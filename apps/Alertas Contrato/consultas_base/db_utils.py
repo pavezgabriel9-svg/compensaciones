@@ -25,14 +25,18 @@ class DatabaseUtils:
     def obtener_alertas(self):
         """Obtiene los datos de alertas desde la base de datos bases/contract_alerts"""
         sql = """
-            SELECT 
-                employee_name, employee_rut, employee_role,
-                boss_name, boss_email,
-                alert_date, alert_reason, expiration,
-                days_since_start, employee_start_date,
-                alert_type
-            FROM contract_alerts 
-            ORDER BY alert_date ASC
+        SELECT 
+            employee_name, employee_rut, employee_role,
+            boss_name, boss_email,
+            alert_date, alert_reason, expiration,
+            days_since_start, employee_start_date,
+            alert_type
+        FROM contract_alerts 
+        WHERE 
+            NOT (alert_type = 'INDEFINIDO' AND second_alert_sent != 0)
+        AND 
+            NOT (alert_type = 'SEGUNDO_PLAZO' AND first_alert_sent != 0)
+        ORDER BY alert_date ASC
         """
         try:
             with self.conectar_bd() as conexion:
@@ -95,6 +99,7 @@ class DatabaseUtils:
                 cursor.close()
                 conexion.close()
 
+    #ya no es necesaria, pero sirve de doble verificación
     def verificar_alerta_procesada(self, employee_rut, alert_type):
         """
         Verifica si una alerta ya esta procesada
