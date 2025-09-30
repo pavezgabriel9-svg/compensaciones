@@ -8,16 +8,16 @@ import sys
 #%% Configuración base de datos
 
 # Configuración BD - windows
-DB_HOST = "192.168.245.33"
-DB_USER = "compensaciones_rrhh"
-DB_PASSWORD = "_Cramercomp2025_"
-DB_NAME = "rrhh_app"
+# DB_HOST = "192.168.245.33"
+# DB_USER = "compensaciones_rrhh"
+# DB_PASSWORD = "_Cramercomp2025_"
+# DB_NAME = "rrhh_app"
 
 # # Configuración BD - mac
-# DB_HOST = "localhost"
-# DB_USER = "root"
-# DB_PASSWORD = "cancionanimal"
-# DB_NAME = "conexion_buk"
+DB_HOST = "localhost"
+DB_USER = "root"
+DB_PASSWORD = "cancionanimal"
+DB_NAME = "conexion_buk"
 
 #%% Función para calcular la fecha de alerta
 def calcular_fecha_alerta(empleado):
@@ -47,14 +47,14 @@ def calcular_fecha_alerta(empleado):
         
         # Primera alerta → paso a segundo plazo
         if tipo_contrato == "fijo" and primer_plazo is not None and segundo_plazo is not None:
-            fecha_alerta = primer_plazo - timedelta(days=0)
+            fecha_alerta = primer_plazo - timedelta(days=0) # Alerta el mismo día del término del primer plazo
             motivo = "Renovación a segundo plazo"
             tipo_alerta = "SEGUNDO_PLAZO"
             dias_vencimiento = (datetime.datetime.now() - fecha_alerta).days
         
         # Segunda alerta → paso a indefinido  
         elif tipo_contrato == "fijo" and primer_plazo is not None and segundo_plazo is None:
-            fecha_alerta = primer_plazo - timedelta(days=0)
+            fecha_alerta = primer_plazo - timedelta(days=0) # Alerta el mismo día del término del segundo plazo
             motivo = "Paso a contrato indefinido"
             tipo_alerta = "INDEFINIDO"
             dias_vencimiento = (datetime.datetime.now() - fecha_alerta).days
