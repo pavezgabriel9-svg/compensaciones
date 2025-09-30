@@ -1,9 +1,6 @@
 #%% Librerías
-import requests
-import os
 import pymysql
 import time
-import json
 import datetime
 from datetime import timedelta
 import sys

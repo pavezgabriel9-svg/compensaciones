@@ -16,3 +16,19 @@ git push
 
 #cambios de niveles 
 cd ../..
+
+# Crea una nueva rama llamada "nueva-funcionalidad"
+git branch nueva-funcionalidad
+
+# Te mueves a esa rama para empezar a trabajar en ella
+git checkout nueva-funcionalidad
+
+#ver todas las ramas 
+git branch
+
+# fucionar los cambios con main desde otra rama
+# asegúrate de estar en la rama que va a recibir los cambios
+git checkout main
+
+# Fusiona los cambios desde la otra rama
+git merge nueva-funcionalidad
