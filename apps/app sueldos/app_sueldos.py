@@ -452,6 +452,15 @@ class CalculadoraSueldos:
             texto = f'{bono["nombre"]}: ${bono["monto"]:,.0f} ({tipo})'.replace(',', '.')
             self.bonos_listbox.insert(tk.END, texto)
 
+
+
+
+
+
+
+
+
+
     # --- Parámetros avanzados ---
     def abrir_parametros(self):
         """Abre la ventana de parámetros avanzados"""
