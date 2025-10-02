@@ -404,7 +404,7 @@ class CompensaViewer:
             return None
 
     def obtener_datos(self):
-        """Obtiene datos con info de jefatura, cargo y sueldo desde employees_jobs"""
+        """Obtiene datos con info de jefatura, cargo y sueldo desde job_history"""
         conexion = self.conectar_bd()
         if not conexion:
             return pd.DataFrame()
@@ -419,11 +419,11 @@ class CompensaViewer:
                 COALESCE(e.contract_type, 'N/A') AS Tipo_Contrato,
                 e.active_since,
 
-                -- Historial desde employees_jobs
-                ej.start_date,
-                ej.end_date,
-                ej.role_name AS Cargo_Actual,
-                ej.base_wage AS Sueldo_Base,
+                -- Historial desde job_history
+                eh.start_date,
+                eh.end_date,
+                eh.historical_role AS Cargo_Actual,
+                eh.base_wage AS Sueldo_Base,
 
                 -- Área
                 COALESCE(a.name, CONCAT('Área ', e.area_id)) AS Nombre_Area,
@@ -431,16 +431,16 @@ class CompensaViewer:
                 -- Jefatura
                 jefe.full_name AS Nombre_Jefe
 
-            FROM employees_jobs ej
+            FROM job_history eh
             JOIN employees e
-                ON ej.person_rut = e.rut
+                ON eh.person_rut = e.rut
             LEFT JOIN areas a
                 ON e.area_id = a.id
             LEFT JOIN employees jefe
-                ON ej.boss_rut = jefe.rut
+                ON eh.boss_rut = jefe.rut
 
-            WHERE e.status = 'activo' AND ej.start_date >= '2018-01-01'
-            ORDER BY e.full_name, ej.start_date;
+            WHERE e.status = 'activo' AND eh.start_date >= '2018-01-01'
+            ORDER BY e.full_name, eh.start_date;
 
             """
             df = pd.read_sql(query, conexion)

@@ -115,10 +115,10 @@ def job_sincronizar_historial_laboral():
         cursor.execute(f"USE {DB_NAME}")
         print(f"✅ Conectado a MySQL y usando la base: {DB_NAME}")
 
-        # 3. Crear la tabla `employees_jobs` si no existe
-        print("🚀 Creando/Verificando tabla 'employees_jobs'...")
+        # 3. Crear la tabla `job_history` si no existe
+        print("🚀 Creando/Verificando tabla 'job_history'...")
         sql_create_table = """
-        CREATE TABLE IF NOT EXISTS employees_jobs (
+        CREATE TABLE IF NOT EXISTS job_history  (
             job_id INT PRIMARY KEY,
             person_id INT,
             person_rut VARCHAR(50),
@@ -143,14 +143,14 @@ def job_sincronizar_historial_laboral():
         for job in historial_laboral:
             try:
                 sql = """
-                INSERT INTO employees_jobs (
+                INSERT INTO job_history  (
                     job_id, person_id, person_rut, start_date, end_date, base_wage, 
-                    role_name, boss_id, boss_rut
+                    historical_role, boss_id, boss_rut
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                     person_id=VALUES(person_id), person_rut=VALUES(person_rut),
                     start_date=VALUES(start_date), end_date=VALUES(end_date), 
-                    base_wage=VALUES(base_wage), role_name=VALUES(role_name),
+                    base_wage=VALUES(base_wage), historical_role=VALUES(historical_role),
                     boss_id=VALUES(boss_id), boss_rut=VALUES(boss_rut);
                 """
                 values = (

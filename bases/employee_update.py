@@ -49,11 +49,21 @@ def obtener_todos_los_empleados_filtrados():
             
             # Filtrar cada empleado de esta página
             for empleado_completo in empleados_pagina:
+                raw_first_name = empleado_completo.get("first_name")
+                
+                first_name_filtered = None
+                if raw_first_name:
+                    try:
+                        first_name_filtered = raw_first_name.split()[0]
+                    except IndexError:
+                        first_name_filtered = None 
                 empleado_filtrado = {
-                #información Personal
+
                 "person_id": empleado_completo.get("person_id"),
                 "id": empleado_completo.get("id"),
                 "full_name": empleado_completo.get("full_name"),
+                "first_name": first_name_filtered,
+                "last_name": empleado_completo.get("surname"),
                 "rut": empleado_completo.get("rut"),
                 "email": empleado_completo.get("email"),
                 "personal_email": empleado_completo.get("personal_email"),
@@ -97,6 +107,7 @@ def obtener_todos_los_empleados_filtrados():
                 'name_role': empleado_completo.get("current_job", {}).get("role", {}).get("name"),
                 'area_id': empleado_completo.get("current_job", {}).get("area_id"),
                 "cost_center": empleado_completo.get("current_job", {}).get("cost_center"),
+                "ctrlit_recinto": empleado_completo.get("current_job", {}).get("custom_attributes", {}).get("ctrlit_recinto"),
                 }
                 empleados_filtrados.append(empleado_filtrado)
             
@@ -194,6 +205,8 @@ def job_sincronizar_empleados():
         CREATE TABLE IF NOT EXISTS employees (
             person_id INT UNIQUE,  
             full_name VARCHAR(255),
+            first_name VARCHAR(100),
+            last_name VARCHAR(100),
             rut VARCHAR(50) PRIMARY KEY, -- Clave primaria
             id INT, 
             email VARCHAR(255),
@@ -237,6 +250,7 @@ def job_sincronizar_empleados():
             name_role VARCHAR(255),
             area_id INT,
             cost_center VARCHAR(255),
+            ctrlit_recinto VARCHAR(255),
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP  -- TIMESTAMP DE ACTUALIZACIÓN
         );
         """
@@ -259,19 +273,19 @@ def job_sincronizar_empleados():
             try:
                 sql = """
                 INSERT INTO employees (
-                person_id, id, full_name, rut, email, personal_email, active_since, 
+                person_id, id, full_name, first_name, last_name, rut, email, personal_email, active_since, 
                 status, payment_method, id_boss, rut_boss, contract_type, start_date, 
                 end_date, contract_finishing_date_1, contract_finishing_date_2, area_id, cost_center,
                 address, street, street_number, city, province, district, region, phone, 
                 gender, birthday, university, degree, bank, account_type, 
                 account_number, nationality, civil_status, health_company, 
                 pension_regime, pension_fund, active_until, termination_reason, afc, retired, 
-                retirement_regime, base_wage, name_role
+                retirement_regime, base_wage, name_role, ctrlit_recinto
                 )
                 VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 ON DUPLICATE KEY UPDATE
                     -- CAMPOS INMUTABLES (NO SE ACTUALIZAN)
@@ -280,6 +294,8 @@ def job_sincronizar_empleados():
                     -- CAMPOS QUE SÍ SE ACTUALIZAN
                     person_id=VALUES(person_id),
                     full_name=VALUES(full_name),
+                    first_name=VALUES(first_name),
+                    last_name=VALUES(last_name),
                     email=VALUES(email),
                     personal_email=VALUES(personal_email),
                     active_since=VALUES(active_since),
@@ -320,13 +336,16 @@ def job_sincronizar_empleados():
                     retired=VALUES(retired),
                     retirement_regime=VALUES(retirement_regime),
                     base_wage=VALUES(base_wage),
-                    name_role=VALUES(name_role)
+                    name_role=VALUES(name_role),
+                    ctrlit_recinto=VALUES(ctrlit_recinto)
                 """
                 
                 values = (
                     e.get("person_id"),
                     e.get("id"),
                     e.get("full_name"),
+                    e.get("first_name"),
+                    e.get("last_name"),
                     e.get("rut"),
                     e.get("email"),
                     e.get("personal_email"),
@@ -368,7 +387,8 @@ def job_sincronizar_empleados():
                     e.get("retired"),
                     e.get("retirement_regime"),
                     e.get("base_wage"),
-                    e.get("name_role") 
+                    e.get("name_role"),
+                    e.get("ctrlit_recinto"), 
                 )
                 
                 cursor.execute(sql, values)
