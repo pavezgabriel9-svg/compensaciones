@@ -1,0 +1,68 @@
+2025-10-03 11:35:45 - INFO - ========== INICIANDO PROCESO ETL DE LIQUIDACIONES ==========
+2025-10-03 11:35:45 - INFO - Periodos a procesar: 1
+2025-10-03 11:35:45 - INFO - 
+============================================================
+2025-10-03 11:35:45 - INFO - Procesando período 1/1: 09-2025  (date param: 01-09-2025)
+2025-10-03 11:36:11 - INFO -    Liquidaciones obtenidas: 577
+2025-10-03 11:36:12 - INFO -    Insertados/actualizados: 577 filas en historical_settlements
+2025-10-03 11:36:13 - INFO -    Insertados: 11359 filas en historical_settlement_items
+2025-10-03 11:36:13 - INFO - 
+============================================================
+2025-10-03 11:36:13 - INFO - PROCESO FINALIZADO
+2025-10-03 11:36:13 - INFO - Total liquidaciones procesadas (aprox insertadas/actualizadas): 577
+2025-10-03 11:36:13 - INFO - Total items procesados (aprox insertados): 11359
+2025-10-03 11:49:32 - INFO - ========== INICIANDO PROCESO ETL DE LIQUIDACIONES ==========
+2025-10-03 11:49:32 - INFO - Periodos a procesar: 1
+2025-10-03 11:49:32 - INFO - 
+============================================================
+2025-10-03 11:49:32 - INFO - Procesando período 1/1: 10-2025  (date param: 01-10-2025)
+2025-10-03 11:49:34 - INFO -    Liquidaciones obtenidas: 0
+2025-10-03 11:49:34 - WARNING -    No hay filas de liquidaciones para insertar.
+2025-10-03 11:49:34 - ERROR -    ADVERTENCIA: La verificación de datos para 10-2025 falló.
+2025-10-03 11:49:34 - WARNING -    No hay items para insertar.
+2025-10-03 11:49:34 - INFO - 
+============================================================
+2025-10-03 11:49:34 - INFO - PROCESO FINALIZADO
+2025-10-03 11:49:34 - INFO - Total liquidaciones procesadas (aprox insertadas/actualizadas): 0
+2025-10-03 11:49:34 - INFO - Total items procesados (aprox insertados): 0
+2025-10-03 11:50:39 - INFO - ========== INICIANDO PROCESO ETL DE LIQUIDACIONES ==========
+2025-10-03 11:50:40 - INFO - Periodos a procesar: 1
+2025-10-03 11:50:40 - INFO - 
+============================================================
+2025-10-03 11:50:40 - INFO - Procesando período 1/1: 09-2025  (date param: 01-09-2025)
+2025-10-03 11:51:03 - INFO -    Liquidaciones obtenidas: 577
+2025-10-03 11:51:04 - INFO -    Insertados/actualizados: 577 filas en historical_settlements
+2025-10-03 11:51:05 - INFO -    Insertados: 11359 filas en historical_settlement_items
+2025-10-03 11:51:05 - INFO - 
+============================================================
+2025-10-03 11:51:05 - INFO - PROCESO FINALIZADO
+2025-10-03 11:51:05 - INFO - Total liquidaciones procesadas (aprox insertadas/actualizadas): 577
+2025-10-03 11:51:05 - INFO - Total items procesados (aprox insertados): 11359
+2025-10-03 14:00:50 - INFO - ========== INICIANDO PROCESO ETL DE LIQUIDACIONES ==========
+2025-10-03 14:00:51 - INFO - Periodos a procesar: 1
+2025-10-03 14:00:51 - INFO - 
+============================================================
+2025-10-03 14:00:51 - INFO - Procesando período 1/1: 10-2025  (date param: 01-10-2025)
+2025-10-03 14:00:52 - INFO -    Liquidaciones obtenidas: 0
+2025-10-03 14:00:52 - WARNING -    No hay filas de liquidaciones para insertar.
+2025-10-03 14:00:52 - ERROR -    ADVERTENCIA: La verificación de datos para 10-2025 falló.
+2025-10-03 14:00:52 - WARNING -    No hay items para insertar.
+2025-10-03 14:00:53 - INFO - 
+============================================================
+2025-10-03 14:00:53 - INFO - PROCESO FINALIZADO
+2025-10-03 14:00:53 - INFO - Total liquidaciones procesadas (aprox insertadas/actualizadas): 0
+2025-10-03 14:00:53 - INFO - Total items procesados (aprox insertados): 0
+2025-10-03 14:04:03 - INFO - ========== INICIANDO PROCESO ETL DE LIQUIDACIONES ==========
+2025-10-03 14:04:03 - INFO - Periodos a procesar: 1
+2025-10-03 14:04:03 - INFO - 
+============================================================
+2025-10-03 14:04:03 - INFO - Procesando período 1/1: 10-2025  (date param: 01-10-2025)
+2025-10-03 14:04:05 - INFO -    Liquidaciones obtenidas: 0
+2025-10-03 14:04:05 - WARNING -    No hay filas de liquidaciones para insertar.
+2025-10-03 14:04:05 - ERROR -    ADVERTENCIA: La verificación de datos para 10-2025 falló.
+2025-10-03 14:04:05 - WARNING -    No hay items para insertar.
+2025-10-03 14:04:05 - INFO - 
+============================================================
+2025-10-03 14:04:05 - INFO - PROCESO FINALIZADO
+2025-10-03 14:04:05 - INFO - Total liquidaciones procesadas (aprox insertadas/actualizadas): 0
+2025-10-03 14:04:05 - INFO - Total items procesados (aprox insertados): 0

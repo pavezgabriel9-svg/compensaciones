@@ -490,8 +490,27 @@ def main():
         logger.error(f"Fallo al conectar o inicializar la base de datos: {e}")
         return
 
+    # Procesar solo el mes actual
+    today = datetime.now()
+    periods = [{
+        "year": today.year,
+        "month": today.month,
+        "date_param": f"01-{today.strftime('%m')}-{today.year}",
+        "label": f"{today.strftime('%m')}-{today.year}"
+    }]
+    
+
+    #procesar solo el mes anterior
+    # target_date = datetime.now() - relativedelta(months=1)
+    # periods = [{
+    # "year": target_date.year,
+    # "month": target_date.month,
+    # "date_param": f"01-{target_date.strftime('%m')}-{target_date.year}",
+    # "label": f"{target_date.strftime('%m')}-{target_date.year}"
+    # }]
+
     # Para procesar todos los períodos, usa esta línea en su lugar:
-    periods = generate_monthly_periods(2019, 1)
+    #periods = generate_monthly_periods(2019, 1)
     
     logger.info(f"Periodos a procesar: {len(periods)}")
 
@@ -512,7 +531,6 @@ def main():
             inserted = save_payrolls_batch_fixed(engine, df_liqs)
             total_processed += inserted
 
-            #  MEJORA: Verificar inserción inmediatamente
             verification_result = verify_data_insertion(engine, p['year'], p['month'])
             if not verification_result:
                 logger.error(f"   ADVERTENCIA: La verificación de datos para {p['label']} falló.")
@@ -539,15 +557,13 @@ def main():
         for f in failed_periods:
             logger.warning(f" - {f['period']}: {f['error']}")
 
+    with open('C:/Users/gpavez/Desktop/Compensaciones/git/compensaciones/bases/log_bases/historical_settlements.txt', 'a') as f:
+        f.write(f"{datetime.now()}: Sincronización completada - {total_processed} liquidaciones procesadas\n")
+
 #%%
 if __name__ == "__main__":
-    print("SISTEMA DE SINCRONIZACIÓN DE empleados - MODO PROGRAMADOR DE TAREAS")
-    print("="*70)
 
     print("Ejecutando sincronización programada...")
     main()
-    
-    print("Tarea completada. El script finalizará automáticamente.")
-    print("La próxima ejecución será programada por Windows.")
 
     sys.exit(0)

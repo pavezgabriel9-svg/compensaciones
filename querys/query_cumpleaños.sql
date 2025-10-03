@@ -1,5 +1,7 @@
 SELECT 
-    e.full_name AS nombre,
+    e.full_name,
+    e.first_name,
+    e.last_name,
     e.rut,
     e.birthday AS cumpleaños,
     MIN(a.name) AS área,              

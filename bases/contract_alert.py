@@ -8,16 +8,16 @@ import sys
 #%% Configuración base de datos
 
 # Configuración BD - windows
-# DB_HOST = "192.168.245.33"
-# DB_USER = "compensaciones_rrhh"
-# DB_PASSWORD = "_Cramercomp2025_"
-# DB_NAME = "rrhh_app"
+DB_HOST = "192.168.245.33"
+DB_USER = "compensaciones_rrhh"
+DB_PASSWORD = "_Cramercomp2025_"
+DB_NAME = "rrhh_app"
 
 # # Configuración BD - mac
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "cancionanimal"
-DB_NAME = "conexion_buk"
+# DB_HOST = "localhost"
+# DB_USER = "root"
+# DB_PASSWORD = "cancionanimal"
+# DB_NAME = "conexion_buk"
 
 #%% Función para calcular la fecha de alerta
 def calcular_fecha_alerta(empleado):
@@ -76,30 +76,21 @@ def calcular_fecha_alerta(empleado):
 
 # %%
 def obtener_info_jefe(id_boss, rut_boss, empleados_lista):
-    """
-    Busca la información del jefe en la lista de empleados.
-    """
     if not id_boss and not rut_boss:
-        return None, None, None
+        return None
     
     for empleado in empleados_lista:
         if (id_boss and empleado.get("id") == id_boss) or (rut_boss and empleado.get("rut") == rut_boss):
-            return (
-                empleado.get("full_name"),
-                empleado.get("email"),
-                empleado.get("rut")
-            )
+            return empleado 
     
-    return None, None, None
+    return None
 
 #%% Función para generar alertas
 def generar_alertas(cursor, conexion):
     """
     Procesa los empleados de la base de datos y genera alertas de contrato.
     """
-    print("=== PROCESANDO ALERTAS DE CONTRATOS ===\n")
-    
-    # Crear la tabla de alertas si no existe
+    # Crear la tabla de alertas si no existe (CON LAS NUEVAS COLUMNAS)
     sql_create_alerts_table = """
     CREATE TABLE IF NOT EXISTS contract_alerts (
         employee_id INT NOT NULL,
@@ -108,8 +99,10 @@ def generar_alertas(cursor, conexion):
         employee_role VARCHAR(255),
         employee_start_date DATE,
         employee_contract_type VARCHAR(50),
-        boss_name VARCHAR(255),
-        boss_email VARCHAR(255),
+        boss_name VARCHAR(255),        -- first name of boss
+        boss_email VARCHAR(255),      -- email of boss
+        boss_of_boss_name VARCHAR(255),     -- first name of boss's boss
+        boss_of_boss_email VARCHAR(255),     -- email of boss's boss
         alert_date DATE NOT NULL,
         alert_type VARCHAR(50),
         alert_reason TEXT,
@@ -126,10 +119,10 @@ def generar_alertas(cursor, conexion):
     cursor.execute(sql_create_alerts_table)
     print("✅ Tabla 'contract_alerts' creada/verificada exitosamente")
     
-    # Consulta para obtener todos los empleados necesarios
+    # Consulta para obtener todos los empleados necesarios (sin cambios aquí)
     sql_empleados = """
     SELECT 
-        id, person_id, full_name, rut, email, name_role,
+        id, person_id, full_name, first_name, rut, email, name_role,
         start_date, contract_type, id_boss, rut_boss,
         active_since, contract_finishing_date_1, contract_finishing_date_2,
         status, payment_method
@@ -140,10 +133,9 @@ def generar_alertas(cursor, conexion):
     cursor.execute(sql_empleados)
     empleados_db = cursor.fetchall()
     
-    # Convertir a lista de diccionarios para facilitar el manejo
     empleados_lista = []
     columnas = [
-        'id', 'person_id', 'full_name', 'rut', 'email', 'name_role',
+        'id', 'person_id', 'full_name', 'first_name', 'rut', 'email', 'name_role',
         'start_date', 'contract_type', 'id_boss', 'rut_boss',
         'active_since', 'contract_finishing_date_1', 'contract_finishing_date_2',
         'status', 'payment_method'
@@ -170,27 +162,36 @@ def generar_alertas(cursor, conexion):
         
         if alerta:
             try:
-                # Obtener información del jefe
-                boss_name, boss_email, boss_rut_real = obtener_info_jefe(
+                jefe_directo = obtener_info_jefe(
                     empleado.get("id_boss"), 
                     empleado.get("rut_boss"),
                     empleados_lista
                 )
-                
-                # Preparar datos para insertar
+                boss_name = jefe_directo.get("first_name") if jefe_directo else None
+                boss_email = jefe_directo.get("email") if jefe_directo else None
+                jefe_del_jefe = None
+                if jefe_directo:
+                    jefe_del_jefe = obtener_info_jefe(
+                        jefe_directo.get("id_boss"),
+                        jefe_directo.get("rut_boss"),
+                        empleados_lista
+                    )
+                boss_of_boss_name = jefe_del_jefe.get("first_name") if jefe_del_jefe else None
+                boss_of_boss_email = jefe_del_jefe.get("email") if jefe_del_jefe else None
+
                 sql_insert = """
                 INSERT INTO contract_alerts (
                     employee_id, employee_name, 
                     employee_rut, employee_role, 
                     employee_start_date, employee_contract_type,
                     boss_name, boss_email,
+                    boss_of_boss_name, boss_of_boss_email,
                     alert_date, alert_type, 
                     alert_reason, days_since_start,
                     expiration
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
-
                 ON DUPLICATE KEY UPDATE
                     employee_name=VALUES(employee_name),
                     employee_role=VALUES(employee_role),
@@ -198,6 +199,8 @@ def generar_alertas(cursor, conexion):
                     employee_contract_type=VALUES(employee_contract_type),
                     boss_name=VALUES(boss_name),
                     boss_email=VALUES(boss_email),
+                    boss_of_boss_name=VALUES(boss_of_boss_name),
+                    boss_of_boss_email=VALUES(boss_of_boss_email),
                     alert_date=VALUES(alert_date),
                     alert_type=VALUES(alert_type),
                     alert_reason=VALUES(alert_reason),
@@ -208,7 +211,7 @@ def generar_alertas(cursor, conexion):
                     updated_at=CURRENT_TIMESTAMP
                 """
                 
-                # Ejecutar inserción
+                # Ejecutar inserción (con los nuevos valores)
                 cursor.execute(sql_insert, (
                     empleado["id"],
                     empleado["full_name"],
@@ -218,6 +221,8 @@ def generar_alertas(cursor, conexion):
                     empleado["contract_type"],
                     boss_name,
                     boss_email,
+                    boss_of_boss_name,
+                    boss_of_boss_email,
                     alerta["fecha_alerta"],
                     alerta["tipo_alerta"],
                     alerta["motivo"],
@@ -232,7 +237,7 @@ def generar_alertas(cursor, conexion):
                     
             except Exception as e:
                 errores += 1
-                print(f"❌ Error insertando alerta para {empleado.get('full_name', 'N/A')}: {e}")
+                print(f"❌ Error insertando alerta para {empleado.get('first_name', 'N/A')}: {e}")
 
     conexion.commit()
     print(f"""
@@ -242,7 +247,6 @@ def generar_alertas(cursor, conexion):
 ❌ Errores: {errores}
 💾 Cambios guardados en la base de datos
 """)
-
 #%% Función principal para ejecutar alertas
 def job_generar_alertas():
     """

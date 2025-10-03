@@ -9,3 +9,7 @@ proyecto_poke_api/venv/
 __pycache__/
 *.py[cod]
 *.pyo
+
+
+/bases/log_bases/
+/bases/config_bases/
