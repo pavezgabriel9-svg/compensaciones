@@ -132,6 +132,13 @@ class ConfigUI:
         self.search_jefatura_entry.pack(side='left', padx=5)
         self.search_jefatura_entry.bind('<KeyRelease>', lambda event: services.actualizar_tabla(self))
 
+        # Búsqueda por Nivel
+        tk.Label(fila2, text="Buscar por Nivel:", bg='#ecf0f1').pack(side='left', padx=10)
+        self.search_level_var = tk.StringVar()
+        self.search_level_entry = ttk.Entry(fila2, textvariable=self.search_level_var, width=20)
+        self.search_level_entry.pack(side='left', padx=5)
+        self.search_level_entry.bind('<KeyRelease>', lambda event: services.actualizar_tabla(self))
+
         tk.Button(fila2, text="Limpiar Filtros", command=lambda: services.limpiar_filtros(self), 
                   bg='#ed2b05', fg='white', font=('Arial', 10, 'bold')).pack(side='right', padx=5)
 
@@ -150,10 +157,10 @@ class ConfigUI:
         cols = ("RUT", "Nombre", "Cargo", "Jefatura", "Sueldo Base", "Nivel", "Años de Servicio")
         self.tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=18, selectmode="extended")
 
-        # Configurar columnas
+         # Configurar columnas
         anchos = [50, 120, 200, 150, 50, 25, 50]
         for i, col in enumerate(cols):
-            self.tree.heading(col, text=col)
+            self.tree.heading(col, text=col, command=lambda c=col: services.ordenar_columna(self, c, False))
             self.tree.column(col, anchor="center", width=anchos[i])
 
         # Bind para doble clic

@@ -81,7 +81,7 @@ def actualizar_tabla(app):
     for _, row in app.df_filtrado.iterrows():
         sueldo_actual = f"${row['base_wage']:,.0f}" if pd.notna(row.get('base_wage')) else "N/A"
         jefatura = row.get('boss_name', 'N/A') if pd.notna(row.get('boss_name')) else "N/A"
-        cargo = row.get('role_name', 'N/A')
+        cargo = row.get('historical_role', 'N/A')
         anos_servicio = f"{row.get('service_years', 0):.1f}"
         nivel = row.get('level', 'N/A') 
 
@@ -125,13 +125,18 @@ def aplicar_filtros(app, df):
     # BUSQUEDA POR CARGO
     search_cargo_term = app.search_cargo_var.get().strip()
     if search_cargo_term:
-        df_filtrado = df_filtrado[df_filtrado["role_name"].str.contains(search_cargo_term, case=False, na=False)]
+        df_filtrado = df_filtrado[df_filtrado["historical_role"].str.contains(search_cargo_term, case=False, na=False)]
         
     # BUSQUEDA POR JEFATURA
     search_jefatura_term = app.search_jefatura_var.get().strip()
     if search_jefatura_term:
         df_filtrado = df_filtrado[df_filtrado["boss_name"].str.contains(search_jefatura_term, case=False, na=False)]
-            
+
+    # BUSQUEDA POR NIVEL
+    search_level_term = app.search_level_var.get().strip()
+    if search_level_term:
+        df_filtrado = df_filtrado[df_filtrado["level"].astype(str).str.lower() == search_level_term.lower()]
+
     return df_filtrado
     
 def limpiar_filtros(app):
@@ -142,6 +147,7 @@ def limpiar_filtros(app):
     app.busqueda_nombre.set("")
     app.search_cargo_var.set("")
     app.search_jefatura_var.set("")
+    app.search_level_var.set("")
 
     actualizar_tabla(app)
 
@@ -174,4 +180,36 @@ def abrir_ficha_persona(app):
     except Exception as e:
         print(f"Error al abrir la ficha personal: {e}")
 
+def ordenar_columna(app, col, reverse):
+    """
+    Ordena una columna del Treeview de forma ascendente o descendente.
+    Maneja tanto datos numéricos como de texto.
+    """
+    # 1. Obtener todos los datos de la vista del Treeview
+    # Se crea una lista de tuplas, donde cada tupla contiene el valor de la columna y el ID del item.
+    data_list = [(app.tree.set(k, col), k) for k in app.tree.get_children('')]
+
+    # 2. Función para limpiar y convertir los datos antes de ordenar
+    def _convertir_valor(valor):
+        # Para columnas numéricas como sueldos o años
+        if col in ["Sueldo Base", "Años de Servicio", "Nivel"]:
+            try:
+                # Limpia el string de caracteres no numéricos y lo convierte a float
+                valor_limpio = str(valor).replace('$', '').replace('.', '').replace(',', '')
+                return float(valor_limpio)
+            except (ValueError, TypeError):
+                # Si falla la conversión, retorna un valor muy bajo para que quede al final
+                return -1
+        # Para el resto de columnas, ordena alfabéticamente en minúsculas
+        return str(valor).lower()
+
+    # 3. Ordenar la lista de datos
+    data_list.sort(key=lambda t: _convertir_valor(t[0]), reverse=reverse)
+
+    # 4. Reinsertar los items en el Treeview en el nuevo orden
+    for index, (val, k) in enumerate(data_list):
+        app.tree.move(k, '', index)
+
+    # 5. Actualizar el comando de la cabecera para que el próximo clic invierta el orden
+    app.tree.heading(col, command=lambda: ordenar_columna(app, col, not reverse))
         

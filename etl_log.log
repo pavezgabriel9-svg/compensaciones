@@ -66,3 +66,6 @@
 2025-10-03 14:04:05 - INFO - PROCESO FINALIZADO
 2025-10-03 14:04:05 - INFO - Total liquidaciones procesadas (aprox insertadas/actualizadas): 0
 2025-10-03 14:04:05 - INFO - Total items procesados (aprox insertados): 0
+2025-10-03 14:23:57 - INFO - ========== INICIANDO PROCESO ETL DE LIQUIDACIONES ==========
+2025-10-03 14:24:07 - ERROR - Fallo al conectar o inicializar la base de datos: (pymysql.err.OperationalError) (2003, "Can't connect to MySQL server on '192.168.245.33' (timed out)")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

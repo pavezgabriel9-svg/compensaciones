@@ -22,6 +22,7 @@ def obtener_datos():
             df['period'] = df['start_date'].dt.to_period('M').astype(str)
             df['years'] = df['start_date'].dt.year
             df['month'] = df['start_date'].dt.month
+            df['level'] = df['level'].astype(pd.Int64Dtype())
          
         print("Datos de historial laboral obtenidos correctamente.")
         return df
@@ -45,7 +46,6 @@ def obtener_datos_liquidaciones():
         df = pd.read_sql(query, engine)
 
         if not df.empty:
-            # Procesamiento de fechas (¡muy importante para el gráfico!)
             df['Pay_Period'] = pd.to_datetime(df['Pay_Period'], errors='coerce')
             df.dropna(subset=['Pay_Period', 'rut', 'Liquido_a_Pagar'], inplace=True)
 
