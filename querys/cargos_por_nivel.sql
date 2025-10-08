@@ -15,10 +15,11 @@ SELECT
     p.level 
 FROM rrhh_app.employees e
 JOIN rrhh_app.position_level p
-    ON e.name_role = p.name_role
+    ON e.rut = p.rut
 WHERE 
     e.status = "activo"
     AND level IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14)
+
 
     -- AND p.level = 4;
     -- AND name_role IN ("Operario", "Operario Almacenamiento y Gestión de Residuos", 'Asistente De Bodega', 'Asistente De Servicios Generales', 'Ayudante De Bodega','Peoneta');
