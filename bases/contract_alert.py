@@ -30,6 +30,8 @@ def calcular_fecha_alerta(empleado):
     fecha_activacion = empleado.get("active_since")
     termino_primer_plazo = empleado.get("contract_finishing_date_1")
     termino_segundo_plazo = empleado.get("contract_finishing_date_2")
+    #correo_corporativo = empleado.get("email")
+    #primer_nombre = empleado.get("")
     
     # Solo considerar empleados activos con transferencia bancaria o tipo de contrato fijo
     if status != "activo" or metodo_pago != "transferencia bancaria" or tipo_contrato == "indefinido":
@@ -98,6 +100,7 @@ def generar_alertas(cursor, conexion):
         employee_rut VARCHAR(50) PRIMARY KEY,
         employee_role VARCHAR(255),
         employee_start_date DATE,
+        email VARCHAR (255), -- email personal
         employee_contract_type VARCHAR(50),
         boss_name VARCHAR(255),        -- first name of boss
         boss_email VARCHAR(255),      -- email of boss
@@ -183,6 +186,7 @@ def generar_alertas(cursor, conexion):
                 INSERT INTO contract_alerts (
                     employee_id, employee_name, 
                     employee_rut, employee_role, 
+                    email,
                     employee_start_date, employee_contract_type,
                     boss_name, boss_email,
                     boss_of_boss_name, boss_of_boss_email,
@@ -190,11 +194,12 @@ def generar_alertas(cursor, conexion):
                     alert_reason, days_since_start,
                     expiration
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 ON DUPLICATE KEY UPDATE
                     employee_name=VALUES(employee_name),
                     employee_role=VALUES(employee_role),
+                    email=VALUES(email),
                     employee_start_date=VALUES(employee_start_date),
                     employee_contract_type=VALUES(employee_contract_type),
                     boss_name=VALUES(boss_name),
@@ -217,6 +222,7 @@ def generar_alertas(cursor, conexion):
                     empleado["full_name"],
                     empleado["rut"],
                     empleado["name_role"],
+                    empleado["email"],
                     empleado["start_date"],
                     empleado["contract_type"],
                     boss_name,

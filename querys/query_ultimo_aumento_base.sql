@@ -88,11 +88,11 @@ SELECT
   nacimiento,
   ingreso,
   base,
-  base_previo,
+  -- base_previo,
   fecha_aumento_previo,
-  variacion_salarial_porcentual,
-  meses_entre_aumentos,
-  promedio_aumentos,
+  -- variacion_salarial_porcentual,
+  -- meses_entre_aumentos,
+  -- promedio_aumentos,
   meses_sin_aumento
 FROM RankedResults
 WHERE rn = 1
